@@ -58,21 +58,26 @@ class CalulateRestoreCost:
 
     def calc(self):
         pass
-    
-    def calc_restore_cost(hydromod, farmed, playaacres):
+
+
+class CalculateRestoreCostTabular:
     """Calculate restoration costs for a playa, given modifications. This is a non-spatial implementation."""
+    def __init__(self, hydromod, farmed, playaacres):
+        #unit conversions
+        m2pa = 4046.86
+        cypacreft = 1613.34
 
-    #unit conversions
-    m2pa = 4046.86
-    cypacreft = 1613.34
+        playaradiusm = math.sqrt((playaacres * m2pa)/math.pi)
+        bufferacres = (80*playaradiusm + 1600)/m2pa
 
-    playaradiusm = math.sqrt((playaacres * m2pa)/math.pi)
-    bufferacres = (80*playaradiusm + 1600)/m2pa
+        return (hydromod * cost_pit) + (farmed * bufferacres * cost_bufferpa) \
+            + (farmed * playaacres * cypacreft * cost_sedimentpcy)
 
-    return (hydromod * cost_pit) + (farmed * bufferacres * cost_bufferpa) \
-        + (farmed * playaacres * cypacreft * cost_sedimentpcy)
-
-
+class CalculateRestoreCostShapefile:
+    """Calculate restoration costs for a playa, given modifications. This is a spatial implementation."""
+    def __init__(self, shapes):
+        pass
+        
 if __name__ == "__main__":
 
     s = Shapefile("myShapefile.shp")
