@@ -48,9 +48,19 @@ class Shapefile:
         self.is_valid = (field_match == 3)
 
 
-def calc_restore_cost (hydromod, farmed, playaacres):
-    """Calculate restoration costs for a playa, given modifications"""
-…
+class CalulateRestoreCost:
+    """
+    Calculate Restore Cost Factory
+    Will allow individual implementations of calc appropriate for a series of conservation actions.
+    """
+    def __init__(self):
+        pass
+
+    def calc(self):
+        pass
+    
+    def calc_restore_cost(hydromod, farmed, playaacres):
+    """Calculate restoration costs for a playa, given modifications. This is a non-spatial implementation."""
 
     #unit conversions
     m2pa = 4046.86
