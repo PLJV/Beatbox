@@ -61,3 +61,15 @@ def calc_restore_cost (hydromod, farmed, playaacres):
 
     return (hydromod * cost_pit) + (farmed * bufferacres * cost_bufferpa) \
         + (farmed * playaacres * cypacreft * cost_sedimentpcy)
+
+
+if __name__ == "__main__":
+
+    s = Shapefile("myShapefile.shp")
+    s.check_restoration_features()
+
+    if s.is_valid:
+        for feature in s.layer:
+            args = [ feature.GetField['hydromod'], feature.GetField['farmed'] ]
+            args.append(feature.GetGeometryRef().GetArea())
+            print(calc_restore_cost(hydromod=args[0],farmed=args[1],playaacres=args[2]))
