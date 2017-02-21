@@ -47,9 +47,7 @@ class Nass:
         for i, f in enumerate(self._zips):
             print("downloading zips:")
             if not os.path.exists(self._zips[i].split("/")[-1]):
-                z = urllib.request.urlopen(f)
-                with open(self._zips[i].split("/")[-1], 'w') as fd:
-                    print(i,",")
-                    shutil.copyfileobj(z.read(), fd)
-                    fd.close()
+                print(i+1, end="")
+                urllib.request.urlretrieve(f, self._zips[i].split("/")[-1])
+
 
