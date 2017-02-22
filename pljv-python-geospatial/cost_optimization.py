@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+"""
+__author__ = "Alex Daniels"
+__copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
+__credits__ = ["Alex Daniels", "Kyle Taylor"]
+__license__ = "GPL"
+__version__ = "3"
+__maintainer__ = "Alex Daniels"
+__email__ = "alex.daniels@pljv.org"
+__status__ = "Testing"
+"""
+
 from osgeo import ogr
 
 import os

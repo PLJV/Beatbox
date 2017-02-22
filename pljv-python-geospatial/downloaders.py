@@ -1,8 +1,20 @@
+#!/usr/bin/env python
+"""
+__author__ = "Kyle Taylor"
+__copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
+__credits__ = ["Kyle Taylor", "Alex Daniels"]
+__license__ = "GPL"
+__version__ = "3"
+__maintainer__ = "Kyle Taylor"
+__email__ = "kyle.taylor@pljv.org"
+__status__ = "Testing"
+"""
+
 import os
 import re
 import requests
 import urllib
-import shutil
+
 from bs4 import BeautifulSoup as bs
 
 BASE = "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/"
@@ -51,3 +63,6 @@ class Nass:
                 urllib.request.urlretrieve(f, self._zips[i].split("/")[-1])
 
 
+class NassClassifiers:
+    def __init__(self):
+        self.corn = [1, 12, 13, 225, 226, 237, 241]

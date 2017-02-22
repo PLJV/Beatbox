@@ -1,4 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+"""
+__author__ = "Kyle Taylor"
+__copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
+__credits__ = ["Kyle Taylor", "Alex Daniels"]
+__license__ = "GPL"
+__version__ = "3"
+__maintainer__ = "Kyle Taylor"
+__email__ = "kyle.taylor@pljv.org"
+__status__ = "Testing"
+"""
 
 import sys
 import gdal
@@ -74,14 +84,14 @@ class Raster(object):
         dataset.FlushCache()
 
 
-def focal(img=None, *args):
+def focal(*args):
     """
     Perform a moving window analysis on a numpy image object
     :param img:
     :param args: integer list specifying the cell-size (x,y) in pixels for the moving window analysis
     :return:
     """
-    return ndimage.uniform_filter(img, (args[0], args[1]))
+    return ndimage.uniform_filter(args[0], args[1], args[2])
 
 if __name__ == "__main__":
     '''
@@ -107,6 +117,8 @@ if __name__ == "__main__":
     r = Raster(file=INPUT_RASTER)
 
     # assign binary 1/0 based-on corresponding (2016) NASS CDL values on the raster surface
+    # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
+    # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
     row_crop = (r.array ==  1 )  | (r.array ==  2 )   | (r.array ==  5 )   | (r.array ==  12 ) | (r.array ==  13 ) | (r.array ==  26 ) | (r.array ==  41 ) | (r.array ==  225 ) | (r.array ==  226 ) | (r.array ==  232 ) | (r.array ==  237 ) | (r.array ==  238 ) | (r.array ==  239 ) | (r.array ==  240 ) | (r.array ==  241 ) | (r.array ==  254 )
     cereal   = (r.array ==  3 )  | (r.array ==  4 )   | (r.array ==  21 )  | (r.array ==  22 ) | (r.array ==  23 ) | (r.array ==  24 ) | (r.array ==  27 ) | (r.array ==  28 ) | (r.array ==  29 ) | (r.array ==  39 ) | (r.array ==  226 ) | (r.array ==  233 ) | (r.array ==  234 ) | (r.array ==  235 ) | (r.array ==  236 ) | (r.array ==  237 ) | (r.array ==  240 ) | (r.array ==  254 )
@@ -128,4 +140,5 @@ if __name__ == "__main__":
 
     # moving windows analyses
     for i, j in enumerate(WINDOW_DIMS):
-        row_crop = focal(img=row_crop, j, j)
+        row_crop = focal(row_crop, j, j)
+
