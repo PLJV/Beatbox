@@ -10,7 +10,7 @@ from scipy import ndimage
 class Raster(object):
     def __init__(self, **kwargs):
         """
-        Raster base class that allows for nifty array conversions for working between GDAL and NumPy.
+        Raster base class that allows for nifty array conversions for working between GDAL, NumPy, and SciPy.
         :param kwargs:
         """
         self._wkt = None
