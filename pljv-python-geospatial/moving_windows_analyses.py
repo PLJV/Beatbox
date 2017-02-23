@@ -20,7 +20,6 @@ class Raster(object):
     def __init__(self, **kwargs):
         """
         Raster base class that allows for nifty array conversions for working between GDAL, NumPy, and SciPy.
-        :param kwargs:
         """
         self._wkt = None
         self._geo_transform = None
@@ -168,7 +167,7 @@ if __name__ == "__main__":
 
         #cereal_mw = mwindow(input=cereal, size=j)
         cereal_mw = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
-        r.array = cereal_mw
+        r.array = numpy.ma.core.MaskedArray(cereal_mw)
         r.np_write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
