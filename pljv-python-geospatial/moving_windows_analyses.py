@@ -137,10 +137,15 @@ if __name__ == "__main__":
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
     row_crop = (r.array ==  1 )  | (r.array ==  2 )   | (r.array ==  5 )   | (r.array ==  12 ) | (r.array ==  13 ) | (r.array ==  26 ) | (r.array ==  41 ) | (r.array ==  225 ) | (r.array ==  226 ) | (r.array ==  232 ) | (r.array ==  237 ) | (r.array ==  238 ) | (r.array ==  239 ) | (r.array ==  240 ) | (r.array ==  241 ) | (r.array ==  254 )
+    row_crop = numpy.array(row_crop, dtype=int)
     cereal   = (r.array ==  3 )  | (r.array ==  4 )   | (r.array ==  21 )  | (r.array ==  22 ) | (r.array ==  23 ) | (r.array ==  24 ) | (r.array ==  27 ) | (r.array ==  28 ) | (r.array ==  29 ) | (r.array ==  39 ) | (r.array ==  226 ) | (r.array ==  233 ) | (r.array ==  234 ) | (r.array ==  235 ) | (r.array ==  236 ) | (r.array ==  237 ) | (r.array ==  240 ) | (r.array ==  254 )
+    cereal   = numpy.array(cereal, dtype=int)
     grass    = (r.array ==  59 ) | (r.array ==  60 )  | (r.array ==  176 )
+    grass    = numpy.array(grass, dtype=int)
     tree     = (r.array ==  63 ) | (r.array ==  70 )  | (r.array ==  71 )  | (r.array ==  141 ) | (r.array ==  142 ) | (r.array ==  143 )
+    tree     = numpy.array(tree, dtype=int)
     wetland  = (r.array ==  87 ) | (r.array ==  190 ) | (r.array ==  195 )
+    wetland  = numpy.array(wetland, dtype=int)
 
     # write to disk
     # r.array = row_crop
@@ -155,25 +160,30 @@ if __name__ == "__main__":
     # r.np_write("2016_wetlands.tif", format=gdal.GDT_Byte)
 
     # moving windows analyses
+    print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
-        row_crop_mw = mwindow(input=row_crop, size=j)
-        r.array = row_crop_mw
+        #row_crop_mw = mwindow(input=row_crop, size=j)
+        row_crop_mw = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
+        r.array = numpy.ma.core.MaskedArray(row_crop_mw)
         r.np_write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
 
-
-        cereal_mw = mwindow(input=cereal, size=j)
+        #cereal_mw = mwindow(input=cereal, size=j)
+        cereal_mw = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
         r.array = cereal_mw
         r.np_write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
 
-        grass_mw = mwindow(input=grass, size=j)
-        r.array = grass_mw
+        #grass_mw = mwindow(input=grass, size=j)
+        grass_mw = ndimage.generic_filter(grass, function=numpy.sum, size=j)
+        r.array = numpy.ma.core.MaskedArray(grass_mw)
         r.np_write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
 
-        tree_mw = mwindow(input=tree, size=j)
-        r.array = tree_mw
+        #tree_mw = mwindow(input=tree, size=j)
+        tree_mw = ndimage.generic_filter(tree, function=numpy.sum, size=j)
+        r.array = numpy.ma.core.MaskedArray(tree_mw)
         r.np_write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
 
-        wetland_mw = mwindow(input=wetland, size=j)
-        r.array = wetland_mw
+        #wetland_mw = mwindow(input=wetland, size=j)
+        wetland_mw = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
+        r.array = numpy.ma.core.MaskedArray(wetland_mw)
         r.np_write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
 
