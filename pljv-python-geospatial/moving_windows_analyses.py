@@ -29,7 +29,7 @@ class Raster(object):
         self._yres = None
         # private spatial parameters
         self._wkt = None
-        self._geo_transform = Non
+        self._geo_transform = None
         # private band data
         self._band = 1
         # a user-facing numpy array object
@@ -165,27 +165,22 @@ if __name__ == "__main__":
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
-        row_crop_mw = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
-        r.array = numpy.ma.core.MaskedArray(row_crop_mw)
+        r.array = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
         r.write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
-        cereal_mw = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
-        r.array = numpy.ma.core.MaskedArray(cereal_mw)
+        r.array = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
         r.write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
-        grass_mw = ndimage.generic_filter(grass, function=numpy.sum, size=j)
-        r.array = numpy.ma.core.MaskedArray(grass_mw)
+        r.array = ndimage.generic_filter(grass, function=numpy.sum, size=j)
         r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        tree_mw = ndimage.generic_filter(tree, function=numpy.sum, size=j)
-        r.array = numpy.ma.core.MaskedArray(tree_mw)
+        r.array = ndimage.generic_filter(tree, function=numpy.sum, size=j)
         r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
-        wetland_mw = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
-        r.array = numpy.ma.core.MaskedArray(wetland_mw)
+        r.array = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
         r.write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
