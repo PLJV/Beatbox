@@ -129,22 +129,22 @@ if __name__ == "__main__":
         raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime")
 
     r = Raster(file=INPUT_RASTER)
-    r.array = numpy.array(r.array,dtype='byte')
+    r.array = numpy.array(r.array,dtype='uint16')
 
     # assign binary 1/0 based-on corresponding (2016) NASS CDL values on the raster surface
     # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
     row_crop = (r.array ==  1 )  | (r.array ==  2 )   | (r.array ==  5 )   | (r.array ==  12 ) | (r.array ==  13 ) | (r.array ==  26 ) | (r.array ==  41 ) | (r.array ==  225 ) | (r.array ==  226 ) | (r.array ==  232 ) | (r.array ==  237 ) | (r.array ==  238 ) | (r.array ==  239 ) | (r.array ==  240 ) | (r.array ==  241 ) | (r.array ==  254 )
-    row_crop = numpy.array(row_crop, dtype='uint16')
+    #row_crop = numpy.array(row_crop, dtype='uint16')
     cereal   = (r.array ==  3 )  | (r.array ==  4 )   | (r.array ==  21 )  | (r.array ==  22 ) | (r.array ==  23 ) | (r.array ==  24 ) | (r.array ==  27 ) | (r.array ==  28 ) | (r.array ==  29 ) | (r.array ==  39 ) | (r.array ==  226 ) | (r.array ==  233 ) | (r.array ==  234 ) | (r.array ==  235 ) | (r.array ==  236 ) | (r.array ==  237 ) | (r.array ==  240 ) | (r.array ==  254 )
-    cereal   = numpy.array(cereal, dtype='uint16')
+    #cereal   = numpy.array(cereal, dtype='uint16')
     grass    = (r.array ==  59 ) | (r.array ==  60 )  | (r.array ==  176 )
-    grass    = numpy.array(grass, dtype='uint16')
+    #grass    = numpy.array(grass, dtype='uint16')
     tree     = (r.array ==  63 ) | (r.array ==  70 )  | (r.array ==  71 )  | (r.array ==  141 ) | (r.array ==  142 ) | (r.array ==  143 )
-    tree     = numpy.array(tree, dtype='uint16')
+    #tree     = numpy.array(tree, dtype='uint16')
     wetland  = (r.array ==  87 ) | (r.array ==  190 ) | (r.array ==  195 )
-    wetland  = numpy.array(wetland, dtype='uint16')
+    #wetland  = numpy.array(wetland, dtype='uint16')
 
     # write to disk
     # r.array = row_crop
