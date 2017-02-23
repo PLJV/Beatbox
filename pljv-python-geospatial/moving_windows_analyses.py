@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
@@ -9,6 +9,7 @@ __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
+
 import sys
 import gdal
 import numpy
@@ -17,32 +18,31 @@ import math
 from scipy import ndimage
 
 class Raster(object):
+    """The Raster base class provides file read/write and nifty converters for working between GDAL, NumPy, and SciPy"""
     def __init__(self, **kwargs):
-        """
-        Raster base class that allows for nifty array conversions for working between GDAL, NumPy, and SciPy.
-        """
-        self._wkt = None
-        self._geo_transform = None
-        self._band = 1
+        # private extent parameters
         self._lr_x = None
         self._lr_y = None
         self._ul_x = None
         self._ul_y = None
         self._xres = None
         self._yres = None
+        # private spatial parameters
+        self._wkt = None
+        self._geo_transform = Non
+        # private band data
+        self._band = 1
+        # a user-facing numpy array object
         self.array = None
         # process any relevant args
         for i, arg in enumerate(kwargs):
             if arg == "band":
                 self._band = kwargs[arg]
             elif arg =="file":
-                self.np_open(file_name=kwargs[arg])
+                self.open(file_name=kwargs[arg])
 
     def _world_to_pixel(self, geoMatrix, x, y):
-        """
-        Uses a gdal geomatrix (gdal.GetGeoTransform()) to calculate
-        the pixel location of a geospatial coordinate
-        """
+        """Uses a gdal geomatrix (gdal.GetGeoTransform()) to calculate the pixel location of a geospatial coordinate"""
         ulX = geoMatrix[0]
         ulY = geoMatrix[3]
         xDist = geoMatrix[1]
@@ -53,7 +53,7 @@ class Raster(object):
         line = int((ulY - y) / xDist)
         return (pixel, line)
 
-    def np_open(self, file_name=None, ndv=0):
+    def open(self, file_name=None, ndv=0):
         src_ds = gdal.Open(file_name, gdal.GA_ReadOnly)
         b = src_ds.GetRasterBand(self._band)
         b_ndv = b.GetNoDataValue()
@@ -67,7 +67,7 @@ class Raster(object):
             ndv = b_ndv
         self.array = numpy.ma.masked_equal(b.ReadAsArray(), ndv)
 
-    def np_write(self, dst_filename=None, format=gdal.GDT_Float32):
+    def write(self, dst_filename=None, format=gdal.GDT_Float32):
 
         driver = gdal.GetDriverByName('GTiff')
 
@@ -82,9 +82,15 @@ class Raster(object):
         dataset.FlushCache()
 
 
+class NassCdlRaster(Raster):
+    def __init__(self):
+        pass
+
+
 def mwindow(**kwargs):
-    """
-    Perform a moving window analysis on a numpy image object
+    """ Wrapper function that performs a moving window analysis on a numpy image object
+
+    Function allows user to specify an ndimage filter for use on input=array object
     :param input: an integer-based numpy.array object
     :param function: a numpy function to apply to our generic filter (e.g., numpy.sum)
     :param args: integer list specifying the cell-size (x,y) in pixels for the moving window analysis
@@ -109,11 +115,10 @@ def mwindow(**kwargs):
     return ndimage.generic_filter(input=img_array, function=fun, size=size)
 
 if __name__ == "__main__":
-    '''
-    MAIN
-    '''
+
     INPUT_RASTER = None
-    WINDOW_DIMS = [107, 237] # 107 = ~1 km; 237 = ~5 kilometers
+    WINDOW_DIMS  = [107, 237] # 107 = ~1 km; 237 = ~5 kilometers
+
     for i in range(0, len(sys.argv)):
         if sys.argv[i] == "-r":
             INPUT_RASTER = sys.argv[i + 1]
@@ -121,7 +126,6 @@ if __name__ == "__main__":
              TARGET_RECLASS_VALUE = list(map(int,sys.argv[i + 1].split(',')))
         elif sys.argv[i] == "-mw":
             WINDOW_DIMS = list(map(int,sys.argv[i + 1].split(',')))
-
     if not WINDOW_DIMS:
         raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime")
     elif not INPUT_RASTER:
@@ -163,25 +167,25 @@ if __name__ == "__main__":
         #row_crop_mw = mwindow(input=row_crop, size=j)
         row_crop_mw = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
         r.array = numpy.ma.core.MaskedArray(row_crop_mw)
-        r.np_write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
         cereal_mw = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
         r.array = numpy.ma.core.MaskedArray(cereal_mw)
-        r.np_write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
         grass_mw = ndimage.generic_filter(grass, function=numpy.sum, size=j)
         r.array = numpy.ma.core.MaskedArray(grass_mw)
-        r.np_write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
         tree_mw = ndimage.generic_filter(tree, function=numpy.sum, size=j)
         r.array = numpy.ma.core.MaskedArray(tree_mw)
-        r.np_write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
         wetland_mw = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
         r.array = numpy.ma.core.MaskedArray(wetland_mw)
-        r.np_write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
