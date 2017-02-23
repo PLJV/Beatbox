@@ -80,7 +80,7 @@ class Raster(object):
 
         dataset.SetGeoTransform(self._geo_transform)
         dataset.SetProjection(self._wkt)
-        dataset.GetRasterBand(1).WriteArray(self.array)
+        dataset.GetRasterBand(self._band).WriteArray(self.array)
         dataset.FlushCache()
 
 
@@ -92,8 +92,8 @@ def mwindow(**kwargs):
     :return:
     """
 
-    if not kwargs['input']:
-        raise ValueError("mwindow requires at-least an input= argument")
+    if type(kwargs['input']) is None:
+        raise ValueError("mwindow requires at-least an input= argument specifying an input array")
 
     size      = 3          # by default let's assume a 3x3 window
     img_array = kwargs['input']
@@ -143,22 +143,23 @@ if __name__ == "__main__":
     wetland  = (r.array ==  87 ) | (r.array ==  190 ) | (r.array ==  195 )
 
     # write to disk
-    r.array = row_crop
-    r.np_write("2016_row_crop.tif", format=gdal.GDT_Byte)
-    r.array = cereal
-    r.np_write("2016_cereal.tif", format=gdal.GDT_Byte)
-    r.array = grass
-    r.np_write("2016_grass.tif", format=gdal.GDT_Byte)
-    r.array = tree
-    r.np_write("2016_forest.tif", format=gdal.GDT_Byte)
-    r.array = wetland
-    r.np_write("2016_wetlands.tif", format=gdal.GDT_Byte)
+    # r.array = row_crop
+    # r.np_write("2016_row_crop.tif", format=gdal.GDT_Byte)
+    # r.array = cereal
+    # r.np_write("2016_cereal.tif", format=gdal.GDT_Byte)
+    # r.array = grass
+    # r.np_write("2016_grass.tif", format=gdal.GDT_Byte)
+    # r.array = tree
+    # r.np_write("2016_forest.tif", format=gdal.GDT_Byte)
+    # r.array = wetland
+    # r.np_write("2016_wetlands.tif", format=gdal.GDT_Byte)
 
     # moving windows analyses
     for i, j in enumerate(WINDOW_DIMS):
         row_crop_mw = mwindow(input=row_crop, size=j)
         r.array = row_crop_mw
         r.np_write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
+
 
         cereal_mw = mwindow(input=cereal, size=j)
         r.array = cereal_mw
@@ -175,3 +176,4 @@ if __name__ == "__main__":
         wetland_mw = mwindow(input=wetland, size=j)
         r.array = wetland_mw
         r.np_write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_Int16)
+
