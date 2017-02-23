@@ -38,7 +38,7 @@ class Raster(object):
             elif arg =="file":
                 self.np_open(file_name=kwargs[arg])
 
-    def _world_to_pixel(geoMatrix, x, y):
+    def _world_to_pixel(self, geoMatrix, x, y):
         """
         Uses a gdal geomatrix (gdal.GetGeoTransform()) to calculate
         the pixel location of a geospatial coordinate
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     MAIN
     '''
     INPUT_RASTER = None
-    WINDOW_DIMS = [33, 166] # 33 = ~1000 meters; 166 = ~5000 meters
+    WINDOW_DIMS = [107, 237] # 107 = ~1 km; 237 = ~5 kilometers
     for i in range(0, len(sys.argv)):
         if sys.argv[i] == "-r":
             INPUT_RASTER = sys.argv[i + 1]
