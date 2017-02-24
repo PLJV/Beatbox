@@ -165,22 +165,27 @@ if __name__ == "__main__":
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
-        r.array = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
+        #r.array = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
+        r.array = ndimage.uniform_filter(row_crop,size=j,mode="constant") * j**2
         r.write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
-        r.array = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
+        #r.array = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
+        r.array = ndimage.uniform_filter(cereal,size=j,mode="constant") * j**2
         r.write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
-        r.array = ndimage.generic_filter(grass, function=numpy.sum, size=j)
+        #r.array = ndimage.generic_filter(grass, function=numpy.sum, size=j)
+        r.array = ndimage.uniform_filter(grass,size=j,mode="constant") * j**2
         r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        r.array = ndimage.generic_filter(tree, function=numpy.sum, size=j)
+        #r.array = ndimage.generic_filter(tree, function=numpy.sum, size=j)
+        r.array = ndimage.uniform_filter(tree,size=j,mode="constant") * j**2
         r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
-        r.array = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
+        #r.array = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
+        r.array = ndimage.uniform_filter(wetland, size=j,mode="constant") * j**2
         r.write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
