@@ -14,6 +14,7 @@ import sys
 import gdal
 import numpy
 import math
+import threading
 
 from scipy import ndimage
 
@@ -53,7 +54,7 @@ class Raster(object):
         line = int((ulY - y) / xDist)
         return (pixel, line)
 
-    def open(self, file_name=None, ndv=0, dtype='uint16'):
+    def open(self, file_name=None, ndv=0):
         src_ds = gdal.Open(file_name, gdal.GA_ReadOnly)
         b = src_ds.GetRasterBand(self._band)
         b_ndv = b.GetNoDataValue()
@@ -65,9 +66,7 @@ class Raster(object):
         self._geo_transform = src_ds.GetGeoTransform()
         if b_ndv is not None:
             ndv = b_ndv
-            self.array = numpy.ma.MaskedArray(b.ReadAsArray(), mask=ndv, dtype=dtype)
-        else:
-            self.array = numpy.array(b.ReadAsArray(), dtype=dtype)
+        self.array = numpy.ma.masked_equal(b.ReadAsArray(), ndv)
 
     def write(self, dst_filename=None, format=gdal.GDT_Float32):
 
@@ -83,6 +82,15 @@ class Raster(object):
         dataset.GetRasterBand(self._band).WriteArray(self.array)
         dataset.FlushCache()
 
+    def split(self,segments=2):
+        """ Take the active array object and split it into segments= number of segments
+
+        This is useful for parallelizing operations across very large raster objects
+        :param segments:
+        :return:
+        """
+        pass
+
 
 class NassCdlRaster(Raster):
     def __init__(self):
@@ -94,27 +102,26 @@ def mwindow(**kwargs):
 
     Function allows user to specify an ndimage filter for use on input=array object
     :param input: an integer-based numpy.array object
+    :param filter: the ndimage.**filter object used for our moving window (default is generic_filter)
     :param function: a numpy function to apply to our generic filter (e.g., numpy.sum)
-    :param args: integer list specifying the cell-size (x,y) in pixels for the moving window analysis
     :return:
     """
 
     if type(kwargs['input']) is None:
         raise ValueError("mwindow requires at-least an input= argument specifying an input array")
 
-    size      = 3          # by default let's assume a 3x3 window
-    img_array = kwargs['input']
-    fun       = numpy.sum  # take the sum of all values by default
+    filter    = ndimage.generic_filter
+    f_kwargs  = dict()
 
     for i,arg in enumerate(kwargs):
-        if arg == "size":
-            size = kwargs[arg]
-        elif arg == "input":
-            img_array = kwargs[arg]
-        elif arg == "fun":
-            fun = kwargs[arg]
+        if arg == "filter":
+            filter = kwargs[arg]
+        else:
+            f_kwargs[arg] = kwargs[arg]
 
-    return ndimage.generic_filter(input=img_array, function=fun, size=size)
+    #return filter(input=img_array, function=fun, size=size)
+    return filter(**f_kwargs)
+
 
 if __name__ == "__main__":
 
@@ -141,54 +148,32 @@ if __name__ == "__main__":
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
     row_crop = (r.array ==  1 )  | (r.array ==  2 )   | (r.array ==  5 )   | (r.array ==  12 ) | (r.array ==  13 ) | (r.array ==  26 ) | (r.array ==  41 ) | (r.array ==  225 ) | (r.array ==  226 ) | (r.array ==  232 ) | (r.array ==  237 ) | (r.array ==  238 ) | (r.array ==  239 ) | (r.array ==  240 ) | (r.array ==  241 ) | (r.array ==  254 )
-    row_crop = numpy.array(row_crop,dtype='uint8')
-    #row_crop = numpy.array(row_crop, dtype='uint16')
     cereal   = (r.array ==  3 )  | (r.array ==  4 )   | (r.array ==  21 )  | (r.array ==  22 ) | (r.array ==  23 ) | (r.array ==  24 ) | (r.array ==  27 ) | (r.array ==  28 ) | (r.array ==  29 ) | (r.array ==  39 ) | (r.array ==  226 ) | (r.array ==  233 ) | (r.array ==  234 ) | (r.array ==  235 ) | (r.array ==  236 ) | (r.array ==  237 ) | (r.array ==  240 ) | (r.array ==  254 )
-    cereal   = numpy.array(cereal, dtype='uint8')
     grass    = (r.array ==  59 ) | (r.array ==  60 )  | (r.array ==  176 )
-    grass    = numpy.array(grass, dtype='uint8')
     tree     = (r.array ==  63 ) | (r.array ==  70 )  | (r.array ==  71 )  | (r.array ==  141 ) | (r.array ==  142 ) | (r.array ==  143 )
-    tree     = numpy.array(tree, dtype='uint8')
     wetland  = (r.array ==  87 ) | (r.array ==  190 ) | (r.array ==  195 )
-    wetland  = numpy.array(wetland, dtype='uint8')
-
-    # write to disk
-    # r.array = row_crop
-    # r.np_write("2016_row_crop.tif", format=gdal.GDT_Byte)
-    # r.array = cereal
-    # r.np_write("2016_cereal.tif", format=gdal.GDT_Byte)
-    # r.array = grass
-    # r.np_write("2016_grass.tif", format=gdal.GDT_Byte)
-    # r.array = tree
-    # r.np_write("2016_forest.tif", format=gdal.GDT_Byte)
-    # r.array = wetland
-    # r.np_write("2016_wetlands.tif", format=gdal.GDT_Byte)
 
     # moving windows analyses
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
-        #r.array = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
-        r.array = ndimage.uniform_filter(row_crop.astype(float),size=j,mode="constant") * j**2
+        r.array = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
         r.write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
-        #r.array = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
-        r.array = ndimage.uniform_filter(cereal.astype(float),size=j,mode="constant") * j**2
+        r.array = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
         r.write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
-        #r.array = ndimage.generic_filter(grass, function=numpy.sum, size=j)
-        r.array = ndimage.uniform_filter(grass.astype(float),size=j,mode="constant") * j**2
+        r.array = ndimage.generic_filter(grass, function=numpy.sum, size=j)
         r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        #r.array = ndimage.generic_filter(tree, function=numpy.sum, size=j)
-        r.array = ndimage.uniform_filter(tree.astype(float),size=j,mode="constant") * j**2
+        r.array = ndimage.generic_filter(tree, function=numpy.sum, size=j)
         r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
-        #r.array = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
-        r.array = ndimage.uniform_filter(wetland.astype(float), size=j,mode="constant") * j**2
+        r.array = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
         r.write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+
 
