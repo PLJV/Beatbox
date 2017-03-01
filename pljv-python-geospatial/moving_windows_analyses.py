@@ -37,8 +37,9 @@ class Raster(georasters.GeoRaster):
 
 
 class NassCdlRaster(Raster):
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        for i, arg in enumerate(kwargs):
+
 
 
 def mwindow(**kwargs):
@@ -63,6 +64,10 @@ def mwindow(**kwargs):
         if arg == "filter":
             if kwargs[arg] == "sum":
                 filter = lambda f : ndimage.uniform_filter(image, size=size, mode="constant") * size ** 2
+            elif kwargs[arg] == "sd":
+                c1 = ndimage.uniform_filter(image, mode='constant')
+                c2 = ndimage.uniform_filter(image * image, mode='constant')
+                filter = lambda f : ((c2 - c1 * c1) ** .5)
         if arg == "size":
             size = kwargs[arg]
         elif arg == "image":
