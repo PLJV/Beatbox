@@ -28,17 +28,25 @@ class Raster(georasters.GeoRaster):
 
     def open(self, file=None):
         ndv, xsize, ysize, geot, projection, datatype = georasters.get_geo_info(file)
+        self.geot       = geot
+        self.projection = projection
+        self.ndv        = ndv
         self.raster = gdalnumeric.LoadFile(file)
         self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == ndv, fill_value=ndv)
 
-    def write(self, dst_filename=None, format=gdal.GDT_Float32):
-        georasters.create_geotiff(name=dst_filename, array=self.raster, geot=self.geot, projection=self.projection,
-                                  datatype=format)
+    def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
+        georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
+                                  datatype=format,driver=driver)
 
 
 class NassCdlRaster(Raster):
+
     def __init__(self, **kwargs):
-        for i, arg in enumerate(kwargs):
+        Raster.__init__(self,kwargs)
+
+    def binary_reclass(self, filter=None):
+        pass
+
 
 
 
