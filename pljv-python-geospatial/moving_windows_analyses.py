@@ -55,16 +55,29 @@ def mwindow(**kwargs):
         raise ValueError("mwindow requires at-least an input= argument specifying an input array")
 
     filter    = ndimage.generic_filter
+    size      = None
+    image     = None
     f_kwargs  = dict()
 
     for i,arg in enumerate(kwargs):
         if arg == "filter":
-            filter = kwargs[arg]
+            if kwargs[arg] == "sum":
+                filter = lambda f : ndimage.uniform_filter(image, size=size, mode="constant") * size ** 2
+        if arg == "size":
+            size = kwargs[arg]
+        elif arg == "image":
+            image = kwargs[arg]
+            if not issubclass(type(image), numpy.ndarray):
+                raise TypeError("image argument must be a numpy array")
+        # by default, pass un-handled arguments to ndimage.generic_filter()
         else:
             f_kwargs[arg] = kwargs[arg]
 
     #return filter(input=img_array, function=fun, size=size)
-    return filter(**f_kwargs)
+    if issubclass(type(filter), ndimage.generic_filter):
+        return filter(**f_kwargs)
+    else:
+        return filter(image, size)
 
 
 if __name__ == "__main__":
@@ -113,7 +126,7 @@ if __name__ == "__main__":
         r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        r.raster = ndimage.uniform_filter(tree, size=j, mode="constant") * j ** 2
+        r.raster =
         r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
