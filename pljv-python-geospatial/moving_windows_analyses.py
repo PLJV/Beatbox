@@ -15,81 +15,25 @@ import gdal
 import numpy
 import math
 import threading
+import georasters
+from osgeo import gdalnumeric
 
 from scipy import ndimage
 
-class Raster(object):
-    """The Raster base class provides file read/write and nifty converters for working between GDAL, NumPy, and SciPy"""
+class Raster(georasters.GeoRaster):
     def __init__(self, **kwargs):
-        # private extent parameters
-        self._lr_x = None
-        self._lr_y = None
-        self._ul_x = None
-        self._ul_y = None
-        self._xres = None
-        self._yres = None
-        # private spatial parameters
-        self._wkt = None
-        self._geo_transform = None
-        # private band data
-        self._band = 1
-        # a user-facing numpy array object
-        self.array = None
-        # process any relevant args
-        for i, arg in enumerate(kwargs):
-            if arg == "band":
-                self._band = kwargs[arg]
-            elif arg =="file":
-                self.open(file_name=kwargs[arg])
+        for i,arg in enumerate(kwargs):
+            if arg == "file":
+                self.open(file=kwargs[arg])
 
-    def _world_to_pixel(self, geoMatrix, x, y):
-        """Uses a gdal geomatrix (gdal.GetGeoTransform()) to calculate the pixel location of a geospatial coordinate"""
-        ulX = geoMatrix[0]
-        ulY = geoMatrix[3]
-        xDist = geoMatrix[1]
-        yDist = geoMatrix[5]
-        rtnX = geoMatrix[2]
-        rtnY = geoMatrix[4]
-        pixel = int((x - ulX) / xDist)
-        line = int((ulY - y) / xDist)
-        return (pixel, line)
-
-    def open(self, file_name=None, ndv=0):
-        src_ds = gdal.Open(file_name, gdal.GA_ReadOnly)
-        b = src_ds.GetRasterBand(self._band)
-        b_ndv = b.GetNoDataValue()
-        # assign our raster extent
-        self._ul_x, self._xres, xskew, self._ul_y, yskew, self._yres = src_ds.GetGeoTransform()
-        self._lr_x = self._ul_x + (src_ds.RasterXSize * self._xres)
-        self._lr_y = self._ul_y + (src_ds.RasterYSize * self._yres)
-        self._wkt = src_ds.GetProjection()
-        self._geo_transform = src_ds.GetGeoTransform()
-        if b_ndv is not None:
-            ndv = b_ndv
-        self.array = numpy.ma.masked_equal(b.ReadAsArray(), ndv)
+    def open(self, file=None):
+        ndv, xsize, ysize, geot, projection, datatype = georasters.get_geo_info(file)
+        self.raster = gdalnumeric.LoadFile(file)
+        self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == ndv, fill_value=ndv)
 
     def write(self, dst_filename=None, format=gdal.GDT_Float32):
-
-        driver = gdal.GetDriverByName('GTiff')
-
-        x_pixels = math.ceil(abs(int(self._lr_x - self._ul_x))/abs(self._xres))
-        y_pixels = math.ceil(abs(int(self._lr_y - self._ul_y))/abs(self._yres))
-
-        dataset = driver.Create(dst_filename, x_pixels, y_pixels, 1, format)
-
-        dataset.SetGeoTransform(self._geo_transform)
-        dataset.SetProjection(self._wkt)
-        dataset.GetRasterBand(self._band).WriteArray(self.array)
-        dataset.FlushCache()
-
-    def split(self,segments=2):
-        """ Take the active array object and split it into segments= number of segments
-
-        This is useful for parallelizing operations across very large raster objects
-        :param segments:
-        :return:
-        """
-        pass
+        georasters.create_geotiff(name=dst_filename, array=self.raster, geot=self.geot, projection=self.projection,
+                                  datatype=format)
 
 
 class NassCdlRaster(Raster):
@@ -141,39 +85,39 @@ if __name__ == "__main__":
         raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime")
 
     r = Raster(file=INPUT_RASTER)
-    r.array = numpy.array(r.array,dtype='uint16')
+    r.raster = numpy.array(r.raster,dtype='uint16')
 
     # assign binary 1/0 based-on corresponding (2016) NASS CDL values on the raster surface
     # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
-    row_crop = (r.array ==  1 )  | (r.array ==  2 )   | (r.array ==  5 )   | (r.array ==  12 ) | (r.array ==  13 ) | (r.array ==  26 ) | (r.array ==  41 ) | (r.array ==  225 ) | (r.array ==  226 ) | (r.array ==  232 ) | (r.array ==  237 ) | (r.array ==  238 ) | (r.array ==  239 ) | (r.array ==  240 ) | (r.array ==  241 ) | (r.array ==  254 )
-    cereal   = (r.array ==  3 )  | (r.array ==  4 )   | (r.array ==  21 )  | (r.array ==  22 ) | (r.array ==  23 ) | (r.array ==  24 ) | (r.array ==  27 ) | (r.array ==  28 ) | (r.array ==  29 ) | (r.array ==  39 ) | (r.array ==  226 ) | (r.array ==  233 ) | (r.array ==  234 ) | (r.array ==  235 ) | (r.array ==  236 ) | (r.array ==  237 ) | (r.array ==  240 ) | (r.array ==  254 )
-    grass    = (r.array ==  59 ) | (r.array ==  60 )  | (r.array ==  176 )
-    tree     = (r.array ==  63 ) | (r.array ==  70 )  | (r.array ==  71 )  | (r.array ==  141 ) | (r.array ==  142 ) | (r.array ==  143 )
-    wetland  = (r.array ==  87 ) | (r.array ==  190 ) | (r.array ==  195 )
+    row_crop = (r.raster ==  1 )  | (r.raster ==  2 )   | (r.raster ==  5 )   | (r.raster ==  12 ) | (r.raster ==  13 ) | (r.raster ==  26 ) | (r.raster ==  41 ) | (r.raster ==  225 ) | (r.raster ==  226 ) | (r.raster ==  232 ) | (r.raster ==  237 ) | (r.raster ==  238 ) | (r.raster ==  239 ) | (r.raster ==  240 ) | (r.raster ==  241 ) | (r.raster ==  254 )
+    cereal   = (r.raster ==  3 )  | (r.raster ==  4 )   | (r.raster ==  21 )  | (r.raster ==  22 ) | (r.raster ==  23 ) | (r.raster ==  24 ) | (r.raster ==  27 ) | (r.raster ==  28 ) | (r.raster ==  29 ) | (r.raster ==  39 ) | (r.raster ==  226 ) | (r.raster ==  233 ) | (r.raster ==  234 ) | (r.raster ==  235 ) | (r.raster ==  236 ) | (r.raster ==  237 ) | (r.raster ==  240 ) | (r.raster ==  254 )
+    grass    = (r.raster ==  59 ) | (r.raster ==  60 )  | (r.raster ==  176 )
+    tree     = (r.raster ==  63 ) | (r.raster ==  70 )  | (r.raster ==  71 )  | (r.raster ==  141 ) | (r.raster ==  142 ) | (r.raster ==  143 )
+    wetland  = (r.raster ==  87 ) | (r.raster ==  190 ) | (r.raster ==  195 )
 
     # moving windows analyses
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
-        r.array = ndimage.generic_filter(row_crop,function=numpy.sum, size=j)
+        r.raster = ndimage.uniform_filter(row_crop, size=j, mode="constant") * j ** 2
         r.write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
-        r.array = ndimage.generic_filter(cereal, function=numpy.sum, size=j)
+        r.raster = ndimage.uniform_filter(cereal, size=j, mode="constant") * j ** 2
         r.write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
-        r.array = ndimage.generic_filter(grass, function=numpy.sum, size=j)
+        r.raster = ndimage.uniform_filter(grass, size=j, mode="constant") * j ** 2
         r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        r.array = ndimage.generic_filter(tree, function=numpy.sum, size=j)
+        r.raster = ndimage.uniform_filter(tree, size=j, mode="constant") * j ** 2
         r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
-        r.array = ndimage.generic_filter(wetland, function=numpy.sum, size=j)
+        r.raster = ndimage.uniform_filter(wetland, size=j, mode="constant") * j ** 2
         r.write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
 
 
