@@ -21,33 +21,38 @@ from osgeo import gdalnumeric
 from scipy import ndimage
 
 class Raster(georasters.GeoRaster):
+    """ Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
+    :arg file string specifying the full path to a raster file (typically a GeoTIFF)
+    """
     def __init__(self, **kwargs):
         for i,arg in enumerate(kwargs):
             if arg == "file":
                 self.open(file=kwargs[arg])
 
     def open(self, file=None):
-        ndv, xsize, ysize, geot, projection, datatype = georasters.get_geo_info(file)
-        self.geot       = geot
-        self.projection = projection
-        self.ndv        = ndv
+        self.ndv, self.xsize, self.ysize, self.geot, self.projection, datatype = georasters.get_geo_info(file)
+        if self.ndv is None :
+            self.ndv = -99999
         self.raster = gdalnumeric.LoadFile(file)
-        self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == ndv, fill_value=ndv)
+        self.y_cell_size = self.geot[1]
+        self.x_cell_size = self.geot[5]
+        self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == self.ndv, fill_value=self.ndv)
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
         georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
-                                  datatype=format,driver=driver)
-
+                                  datatype=format,driver=driver, ndv=self.ndv, xsize=self.xsize,
+                                  ysize=self.ysize)
 
 class NassCdlRaster(Raster):
-
+    """ NassCdlRaster inherits the functionality of the GeoRaster class and extends its functionality with
+     filters and re-classification tools useful for dealing with NASS CDL data.
+    :arg file string specifying the full path to a raster file (typically a GeoTIFF)
+    """
     def __init__(self, **kwargs):
         Raster.__init__(self,kwargs)
 
     def binary_reclass(self, filter=None):
         pass
-
-
 
 
 def mwindow(**kwargs):
@@ -60,8 +65,8 @@ def mwindow(**kwargs):
     :return:
     """
 
-    if type(kwargs['input']) is None:
-        raise ValueError("mwindow requires at-least an input= argument specifying an input array")
+    if type(kwargs['image']) is None:
+        raise ValueError("mwindow requires at-least an image= argument specifying an input array")
 
     filter    = ndimage.generic_filter
     size      = None
@@ -71,11 +76,12 @@ def mwindow(**kwargs):
     for i,arg in enumerate(kwargs):
         if arg == "filter":
             if kwargs[arg] == "sum":
-                filter = lambda f : ndimage.uniform_filter(image, size=size, mode="constant") * size ** 2
+                def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="constant") * size ** 2
             elif kwargs[arg] == "sd":
-                c1 = ndimage.uniform_filter(image, mode='constant')
-                c2 = ndimage.uniform_filter(image * image, mode='constant')
-                filter = lambda f : ((c2 - c1 * c1) ** .5)
+                def filter(kwargs):
+                    c1 = ndimage.uniform_filter(image, size=size, mode='constant')
+                    c2 = ndimage.uniform_filter(image*image, size=size, mode='constant')
+                    return((c2 - c1 * c1) ** .5)
         if arg == "size":
             size = kwargs[arg]
         elif arg == "image":
@@ -86,17 +92,16 @@ def mwindow(**kwargs):
         else:
             f_kwargs[arg] = kwargs[arg]
 
-    #return filter(input=img_array, function=fun, size=size)
-    if issubclass(type(filter), ndimage.generic_filter):
-        return filter(**f_kwargs)
-    else:
-        return filter(image, size)
+    if size is None:
+        raise ValueError("size= argument cannot be null")
+
+    return filter(f_kwargs)
 
 
 if __name__ == "__main__":
 
     INPUT_RASTER = None
-    WINDOW_DIMS  = [107, 237] # 107 = ~1 km; 237 = ~5 kilometers
+    WINDOW_DIMS  = [11, 107, 237] # 107 = ~1 km; 237 = ~5 kilometers
 
     for i in range(0, len(sys.argv)):
         if sys.argv[i] == "-r":
@@ -128,22 +133,20 @@ if __name__ == "__main__":
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
         r.raster = ndimage.uniform_filter(row_crop, size=j, mode="constant") * j ** 2
-        r.write("2016_row_crop_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_row_crop_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
         r.raster = ndimage.uniform_filter(cereal, size=j, mode="constant") * j ** 2
-        r.write("2016_cereal_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_cereal_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
         r.raster = ndimage.uniform_filter(grass, size=j, mode="constant") * j ** 2
-        r.write("2016_grass_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.write("2016_grass_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        r.raster =
-        r.write("2016_tree_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
+        r.raster = ndimage.uniform_filter(tree, size=j, mode="constant") * j ** 2
+        r.write("2016_tree_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
         r.raster = ndimage.uniform_filter(wetland, size=j, mode="constant") * j ** 2
-        r.write("2016_wetland_" + str(j) + "x" + str(j) + ".tif", format=gdal.GDT_UInt16)
-
-
+        r.write("2016_wetland_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
