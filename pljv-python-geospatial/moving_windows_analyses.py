@@ -70,10 +70,10 @@ def mwindow(**kwargs):
     """ Wrapper function that performs a moving window analysis on a numpy image object
 
     Function allows user to specify an ndimage filter for use on input=array object
-    :param input: an integer-based numpy.array object
-    :param filter: the ndimage.**filter object used for our moving window (default is generic_filter)
-    :param function: a numpy function to apply to our generic filter (e.g., numpy.sum)
-    :return:
+    :param image: an integer-based numpy.array object
+    :param filter: a string specifying the type of analysis (e.g.,'sum','mean','sd')
+    :param size: scalar representing the width of the moving window (e.g., size=3; for a 3x3 window)
+    :return: numpy.array object containing the result of the moving window
     """
 
     if type(kwargs['image']) is None:
@@ -86,7 +86,7 @@ def mwindow(**kwargs):
     f_kwargs  = dict()
 
     for i,arg in enumerate(kwargs):
-        if arg == "filter": #the default ndimage filters are slow, but accurate. The following are fast, but controversial"""
+        if arg == "filter": # the default ndimage filters are slow, but accurate. The following are fast, but controversial
             if kwargs[arg] == "sum":
                 def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="constant") * size**2
             if kwargs[arg] == "mean":
@@ -113,7 +113,7 @@ def mwindow(**kwargs):
     if size is None:
         raise ValueError("size= argument cannot be null")
 
-    # enforce strict typing for our numpy array
+    # cast to float64 to force precision (ndimage intermediates will inherit from image's type)
     image = numpy.array(image, dtype=type)
 
     return filter(f_kwargs)
@@ -122,7 +122,7 @@ def mwindow(**kwargs):
 if __name__ == "__main__":
 
     INPUT_RASTER = None
-    WINDOW_DIMS  = [11, 107, 237] # 107 = ~1 km; 237 = ~5 kilometers
+    WINDOW_DIMS  = [] # 107 = ~1 km; 237 = ~5 kilometers
 
     for i in range(0, len(sys.argv)):
         if sys.argv[i] == "-r":
