@@ -86,12 +86,11 @@ def mwindow(**kwargs):
     f_kwargs  = dict()
 
     for i,arg in enumerate(kwargs):
-        if arg == "filter":
-	""" the default ndimage filters are slow, but accurate. The following are fast, but controversial"""
+        if arg == "filter": #the default ndimage filters are slow, but accurate. The following are fast, but controversial"""
             if kwargs[arg] == "sum":
                 def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="constant") * size**2
             if kwargs[arg] == "mean":
-		def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="consstant")
+                def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="constant")
             elif kwargs[arg] == "sd":
                 # mean of square minus square of mean (requires strict enforcement of precision)
                 def filter(kwargs):
@@ -101,7 +100,7 @@ def mwindow(**kwargs):
         elif arg == "size":
             size = kwargs[arg]
         elif arg == "type":
-	    dtype = kwargs[arg]
+            dtype = kwargs[arg]
         elif arg == "image":
             image = kwargs[arg]
             if not issubclass(type(image), numpy.ndarray):
