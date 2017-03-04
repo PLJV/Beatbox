@@ -54,6 +54,17 @@ class NassCdlRaster(Raster):
     def binary_reclass(self, filter=None):
         pass
 
+def gen_circular_array(nPixels=None):
+    """ Make a 2-d array for buffering. It represents a circle of
+    radius buffsize pixels, with 1 inside the circle, and zero outside.
+    """
+    bufferkernel = None
+    if nPixels > 0:
+        n = 2 * nPixels + 1
+        (r, c) = numpy.mgrid[:n, :n]
+        radius = numpy.sqrt((r-nPixels)**2 + (c-nPixels)**2)
+        bufferkernel = (radius <= nPixels).astype(numpy.uint8)
+    return bufferkernel
 
 def mwindow(**kwargs):
     """ Wrapper function that performs a moving window analysis on a numpy image object
@@ -71,29 +82,40 @@ def mwindow(**kwargs):
     filter    = ndimage.generic_filter
     size      = None
     image     = None
+    dtype     = "float64"
     f_kwargs  = dict()
 
     for i,arg in enumerate(kwargs):
         if arg == "filter":
+	""" the default ndimage filters are slow, but accurate. The following are fast, but controversial"""
             if kwargs[arg] == "sum":
-                def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="constant") * size ** 2
+                def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="constant") * size**2
+            if kwargs[arg] == "mean":
+		def filter(kwargs) : ndimage.uniform_filter(image, size=size, mode="consstant")
             elif kwargs[arg] == "sd":
+                # mean of square minus square of mean (requires strict enforcement of precision)
                 def filter(kwargs):
                     c1 = ndimage.uniform_filter(image, size=size, mode='constant')
                     c2 = ndimage.uniform_filter(image*image, size=size, mode='constant')
-                    return((c2 - c1 * c1) ** .5)
-        if arg == "size":
+                    return((c2 - (c1*c1)) ** .5)[make_mwindow_buffer]
+        elif arg == "size":
             size = kwargs[arg]
+        elif arg == "type":
+	    dtype = kwargs[arg]
         elif arg == "image":
             image = kwargs[arg]
             if not issubclass(type(image), numpy.ndarray):
                 raise TypeError("image argument must be a numpy array")
+            image = numpy.array(image, dtype=dtype) # bug-fix : on a binary surface, ndimage requires floating point precision for its calculations
         # by default, pass un-handled arguments to ndimage.generic_filter()
         else:
             f_kwargs[arg] = kwargs[arg]
 
     if size is None:
         raise ValueError("size= argument cannot be null")
+
+    # enforce strict typing for our numpy array
+    image = numpy.array(image, dtype=type)
 
     return filter(f_kwargs)
 
@@ -132,21 +154,21 @@ if __name__ == "__main__":
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
-        r.raster = ndimage.uniform_filter(row_crop, size=j, mode="constant") * j ** 2
+        r.raster = ndimage.uniform_filter(numpy.array(row_crop, dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_row_crop_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #cereal_mw = mwindow(input=cereal, size=j)
-        r.raster = ndimage.uniform_filter(cereal, size=j, mode="constant") * j ** 2
+        r.raster = ndimage.uniform_filter(numpy.array(cereal,dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_cereal_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #grass_mw = mwindow(input=grass, size=j)
-        r.raster = ndimage.uniform_filter(grass, size=j, mode="constant") * j ** 2
+        r.raster = ndimage.uniform_filter(numpy.array(grass,dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_grass_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #tree_mw = mwindow(input=tree, size=j)
-        r.raster = ndimage.uniform_filter(tree, size=j, mode="constant") * j ** 2
+        r.raster = ndimage.uniform_filter(numpy.array(tree,dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_tree_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
         #wetland_mw = mwindow(input=wetland, size=j)
-        r.raster = ndimage.uniform_filter(wetland, size=j, mode="constant") * j ** 2
+        r.raster = ndimage.uniform_filter(numpy.array(wetland, dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_wetland_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
