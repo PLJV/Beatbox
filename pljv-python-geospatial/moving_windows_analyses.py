@@ -17,42 +17,9 @@ import math
 import threading
 import georasters
 from osgeo import gdalnumeric
-
 from scipy import ndimage
 
-class Raster(georasters.GeoRaster):
-    """ Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
-    :arg file string specifying the full path to a raster file (typically a GeoTIFF)
-    """
-    def __init__(self, **kwargs):
-        for i,arg in enumerate(kwargs):
-            if arg == "file":
-                self.open(file=kwargs[arg])
-
-    def open(self, file=None):
-        self.ndv, self.xsize, self.ysize, self.geot, self.projection, datatype = georasters.get_geo_info(file)
-        if self.ndv is None :
-            self.ndv = -99999
-        self.raster = gdalnumeric.LoadFile(file)
-        self.y_cell_size = self.geot[1]
-        self.x_cell_size = self.geot[5]
-        self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == self.ndv, fill_value=self.ndv)
-
-    def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
-        georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
-                                  datatype=format,driver=driver, ndv=self.ndv, xsize=self.xsize,
-                                  ysize=self.ysize)
-
-class NassCdlRaster(Raster):
-    """ NassCdlRaster inherits the functionality of the GeoRaster class and extends its functionality with
-     filters and re-classification tools useful for dealing with NASS CDL data.
-    :arg file string specifying the full path to a raster file (typically a GeoTIFF)
-    """
-    def __init__(self, **kwargs):
-        Raster.__init__(self,kwargs)
-
-    def binary_reclass(self, filter=None):
-        pass
+from .pljv-python-geospatial import *
 
 def gen_circular_array(nPixels=None):
     """ Make a 2-d array for buffering. It represents a circle of
