@@ -21,6 +21,7 @@ from scipy import ndimage
 
 from .pljv-python-geospatial import Raster
 
+
 def gen_circular_array(nPixels=None):
     """ Make a 2-d array for buffering. It represents a circle of
     radius buffsize pixels, with 1 inside the circle, and zero outside.
@@ -33,10 +34,11 @@ def gen_circular_array(nPixels=None):
         bufferkernel = (radius <= nPixels).astype(numpy.uint8)
     return bufferkernel
 
-def mwindow(**kwargs):
-    """ Wrapper function that performs a moving window analysis on a numpy image object
 
-    Function allows user to specify an ndimage filter for use on input=array object
+def mwindow(**kwargs):
+    """ Wrapper function that performs a moving window analysis on a numpy image
+    object. Function allows user to specify an ndimage filter for use on
+    image=array object
     :param image: an integer-based numpy.array object
     :param filter: a string specifying the type of analysis (e.g.,'sum','mean','sd')
     :param size: scalar representing the width of the moving window (e.g., size=3; for a 3x3 window)
@@ -120,6 +122,7 @@ if __name__ == "__main__":
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
+        #r.raster=ndimage.generic_filter(input=numpy.array(r.raster,dtype='uint16'), function=numpy.std, footprint=numpy.array(gen_circular_array(nPixels=11),dtype='uint16'))
         r.raster = ndimage.uniform_filter(numpy.array(row_crop, dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_row_crop_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
