@@ -19,7 +19,7 @@ import georasters
 from osgeo import gdalnumeric
 from scipy import ndimage
 
-from .pljv-python-geospatial import *
+from pljv-python-geospatial import *
 
 def gen_circular_array(nPixels=None):
     """ Make a 2-d array for buffering. It represents a circle of

@@ -24,10 +24,34 @@ class Raster(georasters.GeoRaster):
                                   datatype=format,driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
     def split(self, extent=Null, n=Null, **kwargs):
-        """ split a raster into n individual segments
-        split is usful for parallelization work
-        """
-        pass
+        # define our x/y vector ranges
+        x = np.empty(n+1)
+        x.fill(None)
+        y = np.empty(n+1)
+        x.fill(None)
+        xmin, ymin, xmax, ymax = self.raster.bounds
+        # define the x/y range for calculating the size of our extents
+        xStep = (xmax-xmin)/n
+        yStep = (ymax-ymin)/n
+        # assign vertices to our product vectors
+        for(i in 1:(multiple+1)){
+        x[i] = ifelse(i==1,
+                       min(xmin),
+                       x[i-1]+xStep)
+        y[i] = ifelse(i==1,
+                       min(ymin),
+                       y[i-1]+yStep)
+        }
+        # assign our vertices to extent objects
+        extents = np.empty(n**2)
+        # iterate over our extents, assigning as we go
+        yStart = i = 1;
+        while i <= len(extents):
+            for j in 1:multiple: # stagger our y-values
+              extents[i] = extent(c(x[j],x[j+1],y[yStart],y[yStart+1]))
+              i+=1
+            yStart = yStart+1;
+        return(extents)
 
 class NassCdlRaster(Raster):
     """ NassCdlRaster inherits the functionality of the GeoRaster class and extends its functionality with
@@ -58,5 +82,5 @@ def est_ram_usage(dim=None,dtype=None):
         dim = dim**2
     else:
         dim = prod(dim)
-        
+
     return(dim*numpy.nbytes[dtype])
