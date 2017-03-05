@@ -1,5 +1,6 @@
 import numpy
 
+
 class Raster(georasters.GeoRaster):
     """ Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)
@@ -23,6 +24,7 @@ class Raster(georasters.GeoRaster):
         georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
                                   datatype=format,driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
+
     def split(self, extent=Null, n=Null, **kwargs):
         # define our x/y vector ranges
         x = np.empty(n+1)
@@ -43,14 +45,14 @@ class Raster(georasters.GeoRaster):
                        y[i-1]+yStep)
         }
         # assign our vertices to extent objects
-        extents = np.empty(n**2)
+        extents = []
         # iterate over our extents, assigning as we go
-        yStart = i = 1;
-        while i <= len(extents):
-            for j in 1:multiple: # stagger our y-values
-              extents[i] = extent(c(x[j],x[j+1],y[yStart],y[yStart+1]))
+        yStart = i = 1
+        while i <= n**2:
+            for j in 1:n: # stagger our y-values
+              extents.append(list(x[j],x[j+1],y[yStart],y[yStart+1]))
               i+=1
-            yStart = yStart+1;
+            yStart += 1;
         return(extents)
 
 class NassCdlRaster(Raster):
