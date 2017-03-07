@@ -1,5 +1,7 @@
 """
-Various manipulations on georasters.GeoRaster and numpy base-classes
+Various manipulations on georasters.GeoRaster and numpy objects that we use for
+common raster operations with common geospatial datasets
+
 """
 
 
@@ -28,6 +30,8 @@ class Raster(georasters.GeoRaster):
                                   ysize=self.ysize)
 
     def split(self, extent=Null, n=Null, **kwargs):
+        """ stump for numpy.array_split. splits an input array into n (mostly) equal segments,
+        possibly for a future parallel operation """
         return(numpy.array_split(numpy.array(r.raster,dtype=str(r.raster.data.dtype)), n)
 
 
@@ -40,8 +44,18 @@ class NassCdlRaster(Raster):
     def __init__(self, **kwargs):
         Raster.__init__(self, kwargs)
 
-    def binary_reclass(self, filter=None):
+    def bootstrap(self):
+        """ bootstrap selection of NASS cell values for crops using names from
+        the Raster Attribute Table
+        """
         pass
+
+    def binary_reclass(self, match_array=None, filter=None, invert=False):
+        """ binary reclassification of NASS input data. All cell values in
+        self.raster are reclassified as uint8(boolean) based on whether they
+        match or do not match the values of an input match array.
+        """
+        return(numpy.in1d(self.raster, match_array, assume_unique=False, invert=invert).dtype('uint8'))
 
 
 def get_free_ram():
