@@ -33,8 +33,16 @@ class Raster(georasters.GeoRaster):
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
 
-    def merge(self, **kwargs):
-        pass
+    def merge(self, array=None, **kwargs):
+        try:
+            for i in range(0, len(array)):
+                array[i] = georasters.GeoRaster(array[i], self.geot, nodata_value=self.ndv,
+                                                projection=self.projection, datatype=self.raster.dtype)
+            self.raster = georasters.merge(array)
+        except Exception as e:
+            raise e
+
+
 
     def split(self, n=None, **kwargs):
         """ stump for numpy.array_split. splits an input array into n (mostly) equal segments,
@@ -80,7 +88,7 @@ def est_ram_usage(dim=None, dtype='int64', asGigabytes=True):
         dim = dim.raster.shape
     except AttributeError as e:
         if 'raster' in str(e):
-            try: # sometimes est_ram_usage will be expected to accept a raw numpy array
+            try: # sometimes est_ram_usage will be expected to accept a raw numpy array, rather than a Raster
                 dtype = dim.dtype
                 dim = dim.shape
             except AttributeError as e:
