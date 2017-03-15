@@ -4,16 +4,20 @@ common raster operations with common geospatial datasets
 
 """
 
+import numpy
+import georasters
+import gdalnumeric
+import gdal
 
 class Raster(georasters.GeoRaster):
     """ Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)
     """
-    def __init__(self, **kwargs):
+    def __init__(self, file=None, **kwargs):
         self.raster = None
-        for i, arg in enumerate(kwargs):
-            if arg == "file":
-                self.open(file=kwargs[arg])
+        self.open(file=file)
+        # for i, arg in enumerate(kwargs):
+        #     pass
 
     def open(self, file=None):
         self.ndv, self.xsize, self.ysize, self.geot, self.projection, datatype = georasters.get_geo_info(file)
@@ -29,10 +33,10 @@ class Raster(georasters.GeoRaster):
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
 
-    def split(self, extent=Null, n=Null, **kwargs):
+    def split(self, extent=None, n=None, **kwargs):
         """ stump for numpy.array_split. splits an input array into n (mostly) equal segments,
         possibly for a future parallel operation """
-        return(numpy.array_split(numpy.array(r.raster,dtype=str(r.raster.data.dtype)), n)
+        return numpy.array_split(numpy.array(r.raster,dtype=str(r.raster.data.dtype)), n)
 
 
 class NassCdlRaster(Raster):
@@ -63,13 +67,30 @@ def get_free_ram():
     """
     pass
 
-def est_ram_usage(dim=None,dtype=None):
-    """ estimate the RAM usage for an array object of dimensions
-    arg dim: scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
-    """
-    if type(dim) == int:
-        dim = dim**2
-    else:
-        dim = numpy.prod(dim)
 
-    return(dim*numpy.nbytes[dtype])
+def est_ram_usage(dim=None, dtype=None, asGigabytes=True):
+    """ estimate the RAM usage for an array object of dimensions
+    arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
+    """
+    try:
+        dtype = dim.raster.dtype
+        dim = [dim.xsize, dim.ysize]
+    except AttributeError as e:
+        pass
+    except Exception as e:
+        raise e
+
+    try:
+        dim = dim ** 2
+    except TypeError as e:
+        try:
+            dim = numpy.prod(dim) # maybe this is a list?
+        except Exception as e:
+            raise e
+    except Exception as e:
+        raise e
+
+    if(asGigabytes):
+        return dim*numpy.nbytes[dtype] * (10**-9)
+    else:
+        return dim*numpy.nbytes[dtype]
