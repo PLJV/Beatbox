@@ -11,15 +11,8 @@ __status__ = "Testing"
 """
 
 import sys
-import gdal
-import numpy
-import math
-import threading
-import georasters
-from osgeo import gdalnumeric
 from scipy import ndimage
-
-from .pljv-python-geospatial import Raster
+from .raster import *
 
 
 def gen_circular_array(nPixels=None):

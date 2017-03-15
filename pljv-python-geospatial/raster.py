@@ -33,10 +33,13 @@ class Raster(georasters.GeoRaster):
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
 
-    def split(self, extent=None, n=None, **kwargs):
+    def merge(self, **kwargs):
+        pass
+
+    def split(self, n=None, **kwargs):
         """ stump for numpy.array_split. splits an input array into n (mostly) equal segments,
         possibly for a future parallel operation """
-        return numpy.array_split(numpy.array(r.raster,dtype=str(r.raster.data.dtype)), n)
+        return numpy.array_split(numpy.array(self.raster,dtype=str(self.raster.data.dtype)), n)
 
 
 class NassCdlRaster(Raster):
@@ -68,15 +71,22 @@ def get_free_ram():
     pass
 
 
-def est_ram_usage(dim=None, dtype=None, asGigabytes=True):
+def est_ram_usage(dim=None, dtype='int64', asGigabytes=True):
     """ estimate the RAM usage for an array object of dimensions
     arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
     """
     try:
         dtype = dim.raster.dtype
-        dim = [dim.xsize, dim.ysize]
+        dim = dim.raster.shape
     except AttributeError as e:
-        pass
+        if 'raster' in str(e):
+            try: # sometimes est_ram_usage will be expected to accept a raw numpy array
+                dtype = dim.dtype
+                dim = dim.shape
+            except AttributeError as e:
+                pass # assume this is a scalar
+            except Exception as e:
+                raise e
     except Exception as e:
         raise e
 

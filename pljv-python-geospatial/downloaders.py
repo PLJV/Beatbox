@@ -17,7 +17,7 @@ import urllib
 
 from bs4 import BeautifulSoup as bs
 
-BASE = "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/"
+_BASE = "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/"
 
 class Nass:
     '''
@@ -42,7 +42,7 @@ class Nass:
                 return True
         return False
 
-    def base_url(self, args=BASE):
+    def base_url(self, args=_BASE):
         self._url = args
         self._file = requests.get(self._url)
 
