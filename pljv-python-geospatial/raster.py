@@ -9,17 +9,19 @@ import georasters
 import gdalnumeric
 import gdal
 
+
 class Raster(georasters.GeoRaster):
-    """ Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
-    :arg file string specifying the full path to a raster file (typically a GeoTIFF)
-    """
-    def __init__(self, file=None, **kwargs):
+    """Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
+    :arg file string specifying the full path to a raster file (typically a GeoTIFF)."""
+    def __init__(self, array=None, file=None, **kwargs):
+        """Raster constructor."""
         self.raster = None
         self.open(file=file)
         # for i, arg in enumerate(kwargs):
         #     pass
 
     def open(self, file=None):
+        """Does what it says."""
         self.ndv, self.xsize, self.ysize, self.geot, self.projection, datatype = georasters.get_geo_info(file)
         if self.ndv is None:
             self.ndv = -99999
@@ -29,33 +31,34 @@ class Raster(georasters.GeoRaster):
         self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == self.ndv, fill_value=self.ndv)
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
+        """Wrapper for georasters create_geotiff that writes a numpy array to disk."""
         georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
 
     def merge(self, array=None, **kwargs):
+        """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
         try:
-            for i in range(0, len(array)):
-                array[i] = georasters.GeoRaster(array[i], self.geot, nodata_value=self.ndv,
-                                                projection=self.projection, datatype=self.raster.dtype)
+            array = [georasters.GeoRaster(i, self.geot,
+                                          nodata_value=self.ndv,
+                                          projection=self.projection,
+                                          datatype=self.raster.dtype)
+                     for i in array]
             self.raster = georasters.merge(array)
         except Exception as e:
             raise e
 
-
-
     def split(self, n=None, **kwargs):
-        """ stump for numpy.array_split. splits an input array into n (mostly) equal segments,
-        possibly for a future parallel operation """
+        """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
+        possibly for a future parallel operation."""
         return numpy.array_split(numpy.array(self.raster,dtype=str(self.raster.data.dtype)), n)
 
 
 class NassCdlRaster(Raster):
-    """ inherits the functionality of the GeoRaster class and
+    """Inherits the functionality of the GeoRaster class and
     extends its functionality with filters and re-classification tools useful
     for dealing with NASS CDL data.
-    :arg file string specifying the full path to a raster file (typically a GeoTIFF)
-    """
+    :arg file string specifying the full path to a raster file (typically a GeoTIFF)"""
     def __init__(self, **kwargs):
         Raster.__init__(self, kwargs)
 
@@ -88,11 +91,11 @@ def est_ram_usage(dim=None, dtype='int64', asGigabytes=True):
         dim = dim.raster.shape
     except AttributeError as e:
         if 'raster' in str(e):
-            try: # sometimes est_ram_usage will be expected to accept a raw numpy array, rather than a Raster
+            try:  # sometimes est_ram_usage will be expected to accept a raw numpy array, rather than a Raster
                 dtype = dim.dtype
                 dim = dim.shape
             except AttributeError as e:
-                pass # assume this is a scalar
+                pass  # assume this is a scalar
             except Exception as e:
                 raise e
     except Exception as e:
@@ -102,7 +105,7 @@ def est_ram_usage(dim=None, dtype='int64', asGigabytes=True):
         dim = dim ** 2
     except TypeError as e:
         try:
-            dim = numpy.prod(dim) # maybe this is a list?
+            dim = numpy.prod(dim)  # maybe this is a list?
         except Exception as e:
             raise e
     except Exception as e:
