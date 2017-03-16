@@ -86,20 +86,20 @@ if __name__ == "__main__":
     INPUT_RASTER = None
     WINDOW_DIMS  = [] # 107 = ~1 km; 237 = ~5 kilometers
 
-    for i in range(0, len(sys.argv)):
-        if sys.argv[i] == "-r":
+    for i, arg in enumerate(sys.argv):
+        if arg == "-r":
             INPUT_RASTER = sys.argv[i + 1]
-        elif sys.argv[i] == "-t":
-             TARGET_RECLASS_VALUE = list(map(int,sys.argv[i + 1].split(',')))
-        elif sys.argv[i] == "-mw":
-            WINDOW_DIMS = list(map(int,sys.argv[i + 1].split(',')))
+        elif arg == "-t":
+            TARGET_RECLASS_VALUE = list(map(int, sys.argv[i + 1].split(',')))
+        elif arg == "-mw":
+            WINDOW_DIMS = list(map(int, sys.argv[i + 1].split(',')))
     if not WINDOW_DIMS:
         raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime")
     elif not INPUT_RASTER:
         raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime")
 
     r = Raster(file=INPUT_RASTER)
-    r.raster = numpy.array(r.raster,dtype='uint16')
+    r.raster = numpy.array(r.raster, dtype='uint16')
 
     # assign binary 1/0 based-on corresponding (2016) NASS CDL values on the raster surface
     # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
