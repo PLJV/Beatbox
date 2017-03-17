@@ -73,7 +73,7 @@ class NassCdlRaster(Raster):
         self.raster are reclassified as uint8(boolean) based on whether they
         match or do not match the values of an input match array.
         """
-        return(numpy.in1d(self.raster, match_array, assume_unique=False, invert=invert).dtype('uint8'))
+        return(numpy.in1d(self.raster, match_array, assume_unique=True, invert=invert).dtype('uint8'))
 
 
 def get_free_ram():

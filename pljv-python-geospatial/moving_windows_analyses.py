@@ -11,9 +11,8 @@ __status__ = "Testing"
 """
 
 import sys
+from raster import *
 from scipy import ndimage
-from .raster import *
-
 
 def gen_circular_array(nPixels=None):
     """ Make a 2-d array for buffering. It represents a circle of
@@ -98,18 +97,18 @@ if __name__ == "__main__":
     elif not INPUT_RASTER:
         raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime")
 
-    r = Raster(file=INPUT_RASTER)
+    r = NassCdlRaster(file=INPUT_RASTER)
     r.raster = numpy.array(r.raster, dtype='uint16')
 
     # assign binary 1/0 based-on corresponding (2016) NASS CDL values on the raster surface
     # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
-    row_crop = (r.raster ==  1 )  | (r.raster ==  2 )   | (r.raster ==  5 )   | (r.raster ==  12 ) | (r.raster ==  13 ) | (r.raster ==  26 ) | (r.raster ==  41 ) | (r.raster ==  225 ) | (r.raster ==  226 ) | (r.raster ==  232 ) | (r.raster ==  237 ) | (r.raster ==  238 ) | (r.raster ==  239 ) | (r.raster ==  240 ) | (r.raster ==  241 ) | (r.raster ==  254 )
-    cereal   = (r.raster ==  3 )  | (r.raster ==  4 )   | (r.raster ==  21 )  | (r.raster ==  22 ) | (r.raster ==  23 ) | (r.raster ==  24 ) | (r.raster ==  27 ) | (r.raster ==  28 ) | (r.raster ==  29 ) | (r.raster ==  39 ) | (r.raster ==  226 ) | (r.raster ==  233 ) | (r.raster ==  234 ) | (r.raster ==  235 ) | (r.raster ==  236 ) | (r.raster ==  237 ) | (r.raster ==  240 ) | (r.raster ==  254 )
-    grass    = (r.raster ==  59 ) | (r.raster ==  60 )  | (r.raster ==  176 )
-    tree     = (r.raster ==  63 ) | (r.raster ==  70 )  | (r.raster ==  71 )  | (r.raster ==  141 ) | (r.raster ==  142 ) | (r.raster ==  143 )
-    wetland  = (r.raster ==  87 ) | (r.raster ==  190 ) | (r.raster ==  195 )
+    row_crop = r.binary_reclass(match_array=[1, 2, 5, 12, 13, 26, 41, 225, 226, 232, 237, 238, 239, 240, 254])
+    cereal   = r.binary_reclass(match_array=[3, 4, 21, 22, 23, 24, 27, 28, 29, 39, 226, 233, 234, 235, 236, 237, 240, 254])
+    grass    = r.binary_reclass(match_array=[59, 60, 176])
+    tree     = r.binary_reclass(match_array=[63, 70, 71, 141, 142, 143])
+    wetland  = r.binary_reclass(match_array=[87, 190, 195])
 
     # moving windows analyses
     print(" -- performing moving window analyses")
