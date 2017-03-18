@@ -8,7 +8,7 @@ import numpy
 import georasters
 import gdalnumeric
 import gdal
-
+import psutil
 
 class Raster(georasters.GeoRaster):
     """Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
