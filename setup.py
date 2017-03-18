@@ -10,7 +10,7 @@ try:
 except ImportError as e:
     print(e)
 
-INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn']
+INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn', 'psutil']
 LONG_DESCRIPTION = ""
 
 setup(name='pljv-python-geospatial',
