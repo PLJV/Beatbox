@@ -1,2 +1,2 @@
 # Beatbox
-Simple, pythonic hooks for GDAL and the Orfeo Toolbox designed to offer a programmable and open alternative to Fragstats et al.
+Simple, pythonic hooks for GDAL and the Orfeo Toolbox designed to offer a programmable and open alternative to Fragstats et al. This work was born out of work related to the [QGIS/LecoS project](http://conservationecology.wordpress.com/lecos-land-cover-statistics/ "LecoS"). If you are looking for a good GUI for calculating landscape metrics, we recommend it. If you are looking to roll your own, we recommend us.
