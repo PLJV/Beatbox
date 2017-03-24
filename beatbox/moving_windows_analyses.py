@@ -18,13 +18,13 @@ def gen_circular_array(nPixels=None):
     """ Make a 2-d array for buffering. It represents a circle of
     radius buffsize pixels, with 1 inside the circle, and zero outside.
     """
-    bufferkernel = None
+    kernel = None
     if nPixels > 0:
         n = 2 * nPixels + 1
         (r, c) = numpy.mgrid[:n, :n]
         radius = numpy.sqrt((r-nPixels)**2 + (c-nPixels)**2)
-        bufferkernel = (radius <= nPixels).astype(numpy.uint8)
-    return bufferkernel
+        kernel = (radius <= nPixels).astype(numpy.uint8)
+    return kernel
 
 
 def mwindow(**kwargs):
@@ -83,7 +83,7 @@ def mwindow(**kwargs):
 if __name__ == "__main__":
 
     INPUT_RASTER = None
-    WINDOW_DIMS  = [] # 107 = ~1 km; 237 = ~5 kilometers
+    WINDOW_DIMS  = [] # 107 = ~1 km; 237 = ~50 kilometers
 
     for i, arg in enumerate(sys.argv):
         if arg == "-r":
@@ -104,11 +104,11 @@ if __name__ == "__main__":
     # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     print(" -- reclassifying NASS raster input data")
-    row_crop = r.binary_reclass(match_array=[1, 2, 5, 12, 13, 26, 41, 225, 226, 232, 237, 238, 239, 240, 254])
-    cereal   = r.binary_reclass(match_array=[3, 4, 21, 22, 23, 24, 27, 28, 29, 39, 226, 233, 234, 235, 236, 237, 240, 254])
-    grass    = r.binary_reclass(match_array=[59, 60, 176])
-    tree     = r.binary_reclass(match_array=[63, 70, 71, 141, 142, 143])
-    wetland  = r.binary_reclass(match_array=[87, 190, 195])
+    row_crop = r.binary_reclass(match=[1, 2, 5, 12, 13, 26, 41, 225, 226, 232, 237, 238, 239, 240, 254])
+    cereal   = r.binary_reclass(match=[3, 4, 21, 22, 23, 24, 27, 28, 29, 39, 226, 233, 234, 235, 236, 237, 240, 254])
+    grass    = r.binary_reclass(match=[59, 60, 176])
+    tree     = r.binary_reclass(match=[63, 70, 71, 141, 142, 143])
+    wetland  = r.binary_reclass(match=[87, 190, 195])
 
     # moving windows analyses
     print(" -- performing moving window analyses")

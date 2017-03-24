@@ -8,13 +8,18 @@ import gdalnumeric
 import gdal
 import psutil
 
+from tempfile import mkdtemp
+
 class Raster(georasters.GeoRaster):
     """Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)."""
-    def __init__(self, array=None, file=None, **kwargs):
+    def __init__(self,**kwargs):
         """Raster constructor."""
-        self.raster = None
-        self.open(file=file)
+        try:
+            self.raster = kwargs['array']
+        except KeyError:
+            self.raster = None
+        self.open(kwargs['file'])
         # for i, arg in enumerate(kwargs):
         #     pass
 
@@ -33,6 +38,9 @@ class Raster(georasters.GeoRaster):
         georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
+    def map_to_disk(self):
+        """map the contents of r.raster to disk using numpy.memmap"""
+        pass
 
     def merge(self, array=None, **kwargs):
         """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
@@ -46,6 +54,7 @@ class Raster(georasters.GeoRaster):
         except Exception as e:
             raise e
 
+
     def split(self, n=None, **kwargs):
         """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
         possibly for a future parallel operation."""
@@ -58,7 +67,7 @@ class NassCdlRaster(Raster):
     for dealing with NASS CDL data.
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)"""
     def __init__(self, **kwargs):
-        Raster.__init__(self, kwargs)
+        super(NassCdlRaster, self).__init__(**kwargs)
 
     def bootstrap(self):
         """ bootstrap selection of NASS cell values for crops using names from
@@ -66,22 +75,24 @@ class NassCdlRaster(Raster):
         """
         pass
 
-    def binary_reclass(self, match_array=None, filter=None, invert=False):
+    def binary_reclass(self, match=None, filter=None, invert=False):
         """ binary reclassification of NASS input data. All cell values in
         self.raster are reclassified as uint8(boolean) based on whether they
         match or do not match the values of an input match array.
         """
-        return(numpy.in1d(self.raster, match_array, assume_unique=True, invert=invert).dtype('uint8'))
+        return numpy.array(numpy.in1d(self.raster, match, assume_unique=True, invert=invert), dtype='uint8')
 
 
-def get_free_ram():
+def _get_free_ram(asGigabytes=True):
     """ determine the amount of free memory available on the current node
     """
-    pass
+    if asGigabytes:
+        return psutil.virtual_memory().available * 10**-9
+    else:
+        return psutil.virtual_memory().available
 
-
-def est_ram_usage(dim=None, dtype='int64', asGigabytes=True):
-    """ estimate the RAM usage for an array object of dimensions
+def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
+    """ estimate the RAM usage for an array object
     arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
     """
     try:
@@ -109,7 +120,18 @@ def est_ram_usage(dim=None, dtype='int64', asGigabytes=True):
     except Exception as e:
         raise e
 
+    if not nOperations: # exponential heuristic for a wild-assed estimate of ram utilization across n operations
+        nOperations=1
+
     if(asGigabytes):
-        return dim*numpy.nbytes[dtype] * (10**-9)
+        asGigabytes = 10**-9
     else:
-        return dim*numpy.nbytes[dtype]
+        asGigabytes = 1
+
+    return (dim * numpy.nbytes[dtype] * asGigabytes) ** nOperations
+
+def ram_sanity_check(r, dtype=r.raster.dtype, nOperation=None, asGigabytes=True):
+    """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
+    between your available ram and your proposed operation(s). Negatives are bad. """
+    return _get_free_ram(asGigabytes=asGigabytes) - \
+           _est_ram_usage(r.raster.shape, dtype=dtype, nOperations=nOperation, asGigabytes=asGigabytes)
