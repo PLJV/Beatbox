@@ -80,7 +80,9 @@ class NassCdlRaster(Raster):
         self.raster are reclassified as uint8(boolean) based on whether they
         match or do not match the values of an input match array.
         """
-        return numpy.array(numpy.in1d(self.raster, match, assume_unique=True, invert=invert), dtype='uint8')
+        return numpy.reshape(numpy.array(numpy.in1d(self.raster, match,
+            assume_unique=True, invert=invert), dtype='uint8'),
+            self.raster.shape)
 
 
 def _get_free_ram(asGigabytes=True):
@@ -90,6 +92,7 @@ def _get_free_ram(asGigabytes=True):
         return psutil.virtual_memory().available * 10**-9
     else:
         return psutil.virtual_memory().available
+
 
 def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
     """ estimate the RAM usage for an array object
@@ -130,8 +133,14 @@ def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
 
     return (dim * numpy.nbytes[dtype] * asGigabytes) ** nOperations
 
-def ram_sanity_check(r, dtype=r.raster.dtype, nOperation=None, asGigabytes=True):
+def ram_sanity_check(r, dtype=None, nOperation=None, asGigabytes=True):
     """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
     between your available ram and your proposed operation(s). Negatives are bad. """
+    try:
+        dtype = r.raster.dtype
+    except AttributeError:
+        dtype = dtype
+    except Exception as e:
+        raise e
     return _get_free_ram(asGigabytes=asGigabytes) - \
            _est_ram_usage(r.raster.shape, dtype=dtype, nOperations=nOperation, asGigabytes=asGigabytes)

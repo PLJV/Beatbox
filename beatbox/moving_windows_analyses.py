@@ -114,7 +114,7 @@ if __name__ == "__main__":
     print(" -- performing moving window analyses")
     for i, j in enumerate(WINDOW_DIMS):
         #row_crop_mw = mwindow(input=row_crop, size=j)
-        #r.raster=ndimage.generic_filter(input=numpy.array(r.raster,dtype='uint16'), function=numpy.std, footprint=numpy.array(gen_circular_array(nPixels=11),dtype='uint16'))
+        #r.raster=ndimage.generic_filter(input=numpy.array(r.raster,dtype='uint16'), function=numpy.sum, footprint=numpy.array(gen_circular_array(nPixels=11),dtype='uint16'))
         r.raster = ndimage.uniform_filter(numpy.array(row_crop, dtype="float64"), size=j, mode="constant") * j ** 2
         r.write("2016_row_crop_" + str(j) + "x" + str(j), format=gdal.GDT_UInt16)
 
