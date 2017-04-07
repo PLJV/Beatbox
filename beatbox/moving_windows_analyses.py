@@ -51,15 +51,17 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     # either save to disk or return to user
     if WRITE_FILE:
         try:
-            r.write(dst_filname=str(destfile))
+            r.raster = image
+            r.write(dst_filname = str(destfile))
         except Exception as e:
-            print(e)
+            print(e + "is this a GeoRaster?")
+            return(image)
     else:
-        return r
+
+        return image
 
 
 if __name__ == "__main__":
-
     # required parameters
     _INPUT_RASTER=None
     _IS_NASS=True
