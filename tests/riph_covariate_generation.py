@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.append("..")
+from beatbox import Raster, NassCdlRaster, generic_filter
 
 if __name__ == "__main__":
     rasters = [s for s in os.listdir(".") if "_30m_cdls.tif" in s]
