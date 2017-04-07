@@ -13,14 +13,13 @@ except ImportError as e:
 INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn', 'psutil']
 LONG_DESCRIPTION = ""
 
-setup(name='pljv-python-geospatial',
-      version=versioneer.get_version(),
-      description='The PLJV Python Spatial Swiss Army Knife',
+setup(name='beatbox',
+      version=0.1,
+      description='shell scriptable exposure to ndimage and other tools for big raster processing and spatial analyses',
       license='GPL v.3',
-      author='pljv-python-geospatial contributors',
+      author='Kyle Taylor',
       author_email='kyle.taylor@pljv.org',
       url='http://pljv.org/about',
       long_description=LONG_DESCRIPTION,
-      packages=['pljv-python-geospatial'],
-      install_requires=INSTALL_REQUIRES,
-      cmdclass=versioneer.get_cmdclass())
+      packages=['beatbox'],
+      install_requires=INSTALL_REQUIRES)
