@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: beatbox
+Version: 0.1
+Summary: shell scriptable exposure to ndimage and other tools for big raster processing and spatial analyses
+Home-page: http://pljv.org/about
+Author: Kyle Taylor
+Author-email: kyle.taylor@pljv.org
+License: GPL v.3
+Description: UNKNOWN
+Platform: UNKNOWN

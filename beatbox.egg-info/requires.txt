@@ -1,0 +1,10 @@
+pandas
+shapely
+fiona
+descartes
+pyproj
+geopandas
+georasters
+geoplot
+seaborn
+psutil
