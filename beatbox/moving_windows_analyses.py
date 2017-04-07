@@ -36,8 +36,8 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     """ wrapper for ndimage.generic_filter that can comprehend a GeoRaster, apply a common circular buffer, and writes a numpy
     array to disk following user specifications
     """
-    WRITE_FILE = ( not os.path.isfile(destfile) | overwrite ) & write & type(destfile) is not None
-    FOOTPRINT  = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
+    _WRITE_FILE = (not os.path.isfile(destfile) | overwrite) & write & type(destfile) is not None
+    _FOOTPRINT  = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
     # lazy duck type and apply ndimage filter to user specifications
     try:
         image = r.raster
@@ -46,16 +46,16 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     # wrap across ndimage.generic_filter
     image = ndimage.generic_filter(input=numpy.array(image, dtype='uint16'),
                                    function=function,
-                                   footprint=FOOTPRINT,
+                                   footprint=_FOOTPRINT,
                                    dtype='uint16'))
     # either save to disk or return to user
-    if WRITE_FILE:
+    if _WRITE_FILE:
         try:
-            r.raster = image
+            r.raster=image
             r.write(dst_filname = str(destfile))
         except Exception as e:
             print(e + ". Is this a GeoRaster?")
-            return(image)
+            return image
     else:
         return image
 
@@ -70,26 +70,27 @@ if __name__ == "__main__":
     _TARGET_RECLASS_VALUE=1
     # process runtime arguments
     for i, arg in enumerate(sys.argv):
+        arg.replace("--", "-")
         if arg == "-r":
             _INPUT_RASTER=sys.argv[i + 1]
         elif arg == "-t":
             _TARGET_RECLASS_VALUE=list(map(int, sys.argv[i + 1].split(',')))
         elif arg == "-nass":
-            IS_NASS=True
+            _IS_NASS=True
         elif arg == "-function":
             if re.search(sys.argv[i + 1].lower(), "sum"):
-                FUNCTION=numpy.sum
+                _FUNCTION=numpy.sum
             elif re.search(sys.argv[i + 1].lower(), "mean"):
-                FUNCTION=numpy.mean
+                _FUNCTION=numpy.mean
             elif re.search(sys.argv[i + 1].lower(), "sd"):
-                FUNCTION=numpy.std
+                _FUNCTION=numpy.std
         elif arg == "-mw":
             _WINDOW_DIMS=list(map(int, sys.argv[i + 1].split(',')))
         elif arg == "-reclass":  # e.g., "row_crop=12,34;cereal=2,3;corn=1,10"
             classes=sys.argv[i + 1].split(";")
             for c in classes:
                 c=c.split("=")
-                MATCH_ARRAYS[c[0]]=list(map(int, c[1].split(",")))
+                _MATCH_ARRAYS[c[0]]=list(map(int, c[1].split(",")))
     # sanity-check
     if not _WINDOW_DIMS:
         raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime")
@@ -108,7 +109,7 @@ if __name__ == "__main__":
 
         for m in _MATCH_ARRAYS:
             _MATCH_ARRAYS[m]=r.binary_reclass(match=_MATCH_ARRAYS[m])
-            for window in WINDOW_DIMS:
+            for window in _WINDOW_DIMS:
                 filename=_dict_to_mwindow_filename(key=m, window_size=window)
                 generic_filter(r = _MATCH_ARRAYS[m], function = _FUNCTION, destfile = filename)
 
@@ -117,8 +118,8 @@ if __name__ == "__main__":
     # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
     # code this raster algebra using just the RAT data from the raster file specified at runtime.
     # print(" -- reclassifying NASS raster input data")
-    # row_crop = r.binary_reclass(match=[1, 2, 5, 12, 13, 26, 41, 225, 226, 232, 237, 238, 239, 240, 254])
-    # cereal   = r.binary_reclass(match=[3, 4, 21, 22, 23, 24, 27, 28, 29, 39, 226, 233, 234, 235, 236, 237, 240, 254])
-    # grass    = r.binary_reclass(match=[59, 60, 176])
-    # tree     = r.binary_reclass(match=[63, 70, 71, 141, 142, 143])
-    # wetland  = r.binary_reclass(match=[87, 190, 195])
+    # row_crop = r.binary_reclass(match=[12,5,12,13,26,41,225,226,232,237,238,239,240,254])
+    # cereal   = r.binary_reclass(match=[3,4,21,22,23,24,27,28,29,39,226,233,234,235,236,237,240,254])
+    # grass    = r.binary_reclass(match=[59,60,176])
+    # tree     = r.binary_reclass(match=[63,70,71,141,142,143])
+    # wetland  = r.binary_reclass(match=[87,190,195])
