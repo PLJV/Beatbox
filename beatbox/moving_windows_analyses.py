@@ -11,6 +11,7 @@ __status__ = "Testing"
 """
 
 import sys
+import re
 from raster import *
 from scipy import ndimage
 
@@ -28,6 +29,7 @@ def gen_circular_array(nPixels=None):
     return kernel
 
 def _dict_to_mwindow_filename(key=None, window_size=None):
+    """ quick kludging to generate a filename from key + window size """
     return(str(key)+"_"+str(window_size)+"x"+str(window_size))
 
 def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=True, function=None, size=None, dtype='uint16'):
