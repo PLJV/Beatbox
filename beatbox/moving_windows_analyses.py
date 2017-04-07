@@ -54,10 +54,9 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
             r.raster = image
             r.write(dst_filname = str(destfile))
         except Exception as e:
-            print(e + "is this a GeoRaster?")
+            print(e + ". Is this a GeoRaster?")
             return(image)
     else:
-
         return image
 
 
