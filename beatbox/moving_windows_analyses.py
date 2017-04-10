@@ -37,8 +37,13 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     """ wrapper for ndimage.generic_filter that can comprehend a GeoRaster, apply a common circular buffer, and writes a numpy
     array to disk following user specifications
     """
-    _WRITE_FILE = (not os.path.isfile(destfile) | overwrite) & write & type(destfile) is not None
-    _FOOTPRINT  = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
+    try:
+        _WRITE_FILE = (not os.path.isfile(destfile) | overwrite) & write & type(destfile) is not None
+    except TypeError as e:
+        _WRITE_FILE = False
+
+    _FOOTPRINT = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
+
     # lazy duck type and apply ndimage filter to user specifications
     try:
         image = r.raster
