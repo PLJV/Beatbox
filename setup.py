@@ -10,7 +10,7 @@ try:
 except ImportError as e:
     print(e)
 
-INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn', 'psutil']
+INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn', 'psutil', 'requests', 'bs4']
 LONG_DESCRIPTION = ""
 
 setup(name='beatbox',
