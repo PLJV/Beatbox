@@ -56,9 +56,9 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
                                        footprint=_FOOTPRINT)
     except RuntimeError as e:
         if re.search(e, "function"):
-            print "function= argument cannot be None"
+            print("function= argument cannot be None")
         else:
-            print "exiting on an unhandled exception"
+            print("exiting on an unhandled exception")
         raise e
     # either save to disk or return to user
     if _WRITE_FILE:
