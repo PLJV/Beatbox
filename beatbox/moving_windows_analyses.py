@@ -50,17 +50,23 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     except AttributeError as e:
         image = r
     # wrap across ndimage.generic_filter
-    image = ndimage.generic_filter(input=numpy.array(image, dtype='uint16'),
-                                   function=function,
-                                   footprint=_FOOTPRINT,
-                                   dtype='uint16')
+    try:
+        image = ndimage.generic_filter(input=numpy.array(image, dtype=dtype),
+                                       function=function,
+                                       footprint=_FOOTPRINT)
+    except RuntimeError as e:
+        if re.search(e, "function"):
+            print "function= argument cannot be None"
+        else:
+            print "exiting on an unhandled exception"
+        raise e
     # either save to disk or return to user
     if _WRITE_FILE:
         try:
             r.raster=image
             r.write(dst_filname = str(destfile))
         except Exception as e:
-            print(e + ". Is this a GeoRaster?")
+            print(e + "doesn't appear to be a Raster object; returning generic_filter result to user")
             return image
     else:
         return image
@@ -118,14 +124,3 @@ if __name__ == "__main__":
             for window in _WINDOW_DIMS:
                 filename=_dict_to_mwindow_filename(key=m, window_size=window)
                 generic_filter(r = _MATCH_ARRAYS[m], function = _FUNCTION, destfile = filename)
-
-
-    # assign binary 1/0 based-on corresponding (2016) NASS CDL values on the raster surface
-    # that I bogarted from the 2016 raster using 'R'. We should come-up with an elegant way to
-    # code this raster algebra using just the RAT data from the raster file specified at runtime.
-    # print(" -- reclassifying NASS raster input data")
-    # row_crop = r.binary_reclass(match=[12,5,12,13,26,41,225,226,232,237,238,239,240,254])
-    # cereal   = r.binary_reclass(match=[3,4,21,22,23,24,27,28,29,39,226,233,234,235,236,237,240,254])
-    # grass    = r.binary_reclass(match=[59,60,176])
-    # tree     = r.binary_reclass(match=[63,70,71,141,142,143])
-    # wetland  = r.binary_reclass(match=[87,190,195])
