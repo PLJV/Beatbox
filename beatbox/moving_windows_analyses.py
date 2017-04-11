@@ -41,9 +41,11 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
         _WRITE_FILE = (not os.path.isfile(destfile) | overwrite) & write & type(destfile) is not None
     except TypeError as e:
         _WRITE_FILE = False
-
-    _FOOTPRINT = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
-
+    try:
+        _FOOTPRINT = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
+    except TypeError as e:
+        print("You may have missed a size= or footprint= argument to generic_filter()")
+        raise e
     # lazy duck type and apply ndimage filter to user specifications
     try:
         image = r.raster
@@ -59,6 +61,9 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
             print("function= argument cannot be None")
         else:
             print("exiting on an unhandled exception")
+        raise e
+    except ValueError as e:
+        print("You may have missed a function= argument to generic_filter()")
         raise e
     # either save to disk or return to user
     if _WRITE_FILE:
