@@ -48,7 +48,7 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
         raise e
     # lazy duck type and apply ndimage filter to user specifications
     try:
-        image = r.raster
+        image = r.array
     except AttributeError as e:
         image = r
     # wrap across ndimage.generic_filter
@@ -68,7 +68,7 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     # either save to disk or return to user
     if _WRITE_FILE:
         try:
-            r.raster=image
+            r.array=image
             r.write(dst_filname = str(destfile))
         except Exception as e:
             print(e + "doesn't appear to be a Raster object; returning generic_filter result to user")
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     # process any re-classification requests prior to our moving windows analysis if asked
     if _MATCH_ARRAYS:
         if _IS_NASS:
-            r=NassCdlRaster(file=_INPUT_RASTER)
-            r.raster = numpy.array(r.raster, dtype='uint16') # anticipating composition metric calculations ?
+            r=Raster(file=_INPUT_RASTER)
+            r.array = numpy.array(r.array, dtype='uint16') # anticipating composition metric calculations ?
         else:
             r=Raster(file=_INPUT_RASTER)
 

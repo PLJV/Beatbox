@@ -16,9 +16,9 @@ class Raster(georasters.GeoRaster):
     def __init__(self,**kwargs):
         """Raster constructor."""
         try:
-            self.raster = kwargs['array']
+            self.array = kwargs['array']
         except KeyError:
-            self.raster = None
+            self.array = None
         self.open(kwargs['file'])
         # for i, arg in enumerate(kwargs):
         #     pass
@@ -28,28 +28,28 @@ class Raster(georasters.GeoRaster):
         self.ndv, self.xsize, self.ysize, self.geot, self.projection, datatype = georasters.get_geo_info(file)
         if self.ndv is None:
             self.ndv = -99999
-        self.raster = gdalnumeric.LoadFile(file)
+        self.array = gdalnumeric.LoadFile(file)
         self.y_cell_size = self.geot[1]
         self.x_cell_size = self.geot[5]
-        self.raster = numpy.ma.masked_array(self.raster, mask=self.raster == self.ndv, fill_value=self.ndv)
+        self.array = numpy.ma.masked_array(self.array, mask=self.array == self.ndv, fill_value=self.ndv)
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
         """Wrapper for georasters create_geotiff that writes a numpy array to disk."""
-        georasters.create_geotiff(name=dst_filename, Array=self.raster, geot=self.geot, projection=self.projection,
+        georasters.create_geotiff(name=dst_filename, Array=self.array, geot=self.geot, projection=self.projection,
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
     def map_to_disk(self):
-        """map the contents of r.raster to disk using numpy.memmap"""
+        """map the contents of r.array to disk using numpy.memmap"""
         pass
 
     def binary_reclass(self, match=None, filter=None, invert=False):
         """ binary reclassification of input data. All cell values in
-        self.raster are reclassified as uint8(boolean) based on whether they
+        self.array are reclassified as uint8(boolean) based on whether they
         match or do not match the values of an input match array.
         """
-        return numpy.reshape(numpy.array(numpy.in1d(self.raster, match,
+        return numpy.reshape(numpy.array(numpy.in1d(self.array, match,
             assume_unique=True, invert=invert), dtype='uint8'),
-            self.raster.shape)
+            self.array.shape)
 
     def merge(self, array=None, **kwargs):
         """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
@@ -57,9 +57,9 @@ class Raster(georasters.GeoRaster):
             array = [georasters.GeoRaster(i, self.geot,
                                           nodata_value=self.ndv,
                                           projection=self.projection,
-                                          datatype=self.raster.dtype)
+                                          datatype=self.array.dtype)
                      for i in array]
-            self.raster = georasters.merge(array)
+            self.array = georasters.merge(array)
         except Exception as e:
             raise e
 
@@ -67,7 +67,7 @@ class Raster(georasters.GeoRaster):
     def split(self, n=None, **kwargs):
         """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
         possibly for a future parallel operation."""
-        return numpy.array_split(numpy.array(self.raster,dtype=str(self.raster.data.dtype)), n)
+        return numpy.array_split(numpy.array(self.array,dtype=str(self.array.data.dtype)), n)
 
 
 class NassCdlRaster(Raster):
@@ -99,8 +99,8 @@ def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
     arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
     """
     try:
-        dtype = dim.raster.dtype
-        dim = dim.raster.shape
+        dtype = dim.array.dtype
+        dim = dim.array.shape
     except AttributeError as e:
         if 'raster' in str(e):
             try:  # sometimes est_ram_usage will be expected to accept a raw numpy array, rather than a Raster
@@ -137,10 +137,10 @@ def ram_sanity_check(r, dtype=None, nOperation=None, asGigabytes=True):
     """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
     between your available ram and your proposed operation(s). Negatives are bad. """
     try:
-        dtype = r.raster.dtype
+        dtype = r.array.dtype
     except AttributeError:
         dtype = dtype
     except Exception as e:
         raise e
     return _get_free_ram(asGigabytes=asGigabytes) - \
-           _est_ram_usage(r.raster.shape, dtype=dtype, nOperations=nOperation, asGigabytes=asGigabytes)
+           _est_ram_usage(r.array.shape, dtype=dtype, nOperations=nOperation, asGigabytes=asGigabytes)

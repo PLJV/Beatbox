@@ -58,7 +58,7 @@ if __name__ == "__main__":
     if _MATCH_ARRAYS:
         if _IS_NASS:
             r=NassCdlRaster(file=_INPUT_RASTER)
-            r.raster = numpy.array(r.raster, dtype='uint16') # anticipating composition metric calculations ?
+            r.array = numpy.array(r.array, dtype='uint16') # anticipating composition metric calculations ?
         else:
             r=Raster(file=_INPUT_RASTER)
 
