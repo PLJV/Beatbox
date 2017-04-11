@@ -1,5 +1,5 @@
 """
-Various manipulations on georasters.GeoRaster and numpy objects that we use for common raster operations
+Various manipulations on georasters.GeoRaster and numpy objects that we use for raster operations
 """
 
 import numpy

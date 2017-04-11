@@ -38,7 +38,7 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     array to disk following user specifications
     """
     try:
-        _WRITE_FILE = (not os.path.isfile(destfile) | overwrite) & write & type(destfile) is not None
+        _WRITE_FILE = ((not os.path.isfile(destfile)) | overwrite) & write & type(destfile) is not None
     except TypeError as e:
         _WRITE_FILE = False
     try:

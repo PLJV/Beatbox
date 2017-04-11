@@ -48,7 +48,8 @@ if __name__ == "__main__":
             for c in classes:
                 c=c.split("=")
                 _MATCH_ARRAYS[c[0]]=list(map(int, c[1].split(",")))
-    # sanity-check
+                
+    # sanity-check user input
     if not _WINDOW_DIMS:
         raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime")
     elif not _INPUT_RASTER:
@@ -57,7 +58,7 @@ if __name__ == "__main__":
     # process any re-classification requests prior to our moving windows analysis if asked
     if _MATCH_ARRAYS:
         if _IS_NASS:
-            r=NassCdlRaster(file=_INPUT_RASTER)
+            r=Raster(file=_INPUT_RASTER)
             r.array = numpy.array(r.array, dtype='uint16') # anticipating composition metric calculations ?
         else:
             r=Raster(file=_INPUT_RASTER)
