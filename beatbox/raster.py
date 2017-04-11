@@ -42,6 +42,15 @@ class Raster(georasters.GeoRaster):
         """map the contents of r.raster to disk using numpy.memmap"""
         pass
 
+    def binary_reclass(self, match=None, filter=None, invert=False):
+        """ binary reclassification of input data. All cell values in
+        self.raster are reclassified as uint8(boolean) based on whether they
+        match or do not match the values of an input match array.
+        """
+        return numpy.reshape(numpy.array(numpy.in1d(self.raster, match,
+            assume_unique=True, invert=invert), dtype='uint8'),
+            self.raster.shape)
+
     def merge(self, array=None, **kwargs):
         """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
         try:
@@ -74,15 +83,6 @@ class NassCdlRaster(Raster):
         the Raster Attribute Table
         """
         pass
-
-    def binary_reclass(self, match=None, filter=None, invert=False):
-        """ binary reclassification of NASS input data. All cell values in
-        self.raster are reclassified as uint8(boolean) based on whether they
-        match or do not match the values of an input match array.
-        """
-        return numpy.reshape(numpy.array(numpy.in1d(self.raster, match,
-            assume_unique=True, invert=invert), dtype='uint8'),
-            self.raster.shape)
 
 
 def _get_free_ram(asGigabytes=True):

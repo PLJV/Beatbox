@@ -128,4 +128,5 @@ if __name__ == "__main__":
             _MATCH_ARRAYS[m]=r.binary_reclass(match=_MATCH_ARRAYS[m])
             for window in _WINDOW_DIMS:
                 filename=_dict_to_mwindow_filename(key=m, window_size=window)
-                generic_filter(r = _MATCH_ARRAYS[m], function = _FUNCTION, destfile = filename)
+                generic_filter(r = _MATCH_ARRAYS[m], function = _FUNCTION,
+                               size = window, destfile = filename)
