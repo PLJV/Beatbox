@@ -71,6 +71,8 @@ if __name__ == "__main__":
                 _MATCH_ARRAYS[c[0]]=list(map(int, c[1].split(",")))
 
     # sanity-check user input
+    if not _MATCH_ARRAYS:
+        _MATCH_ARRAYS['output'] = None
     if not _WINDOW_DIMS:
         raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime. see -u for usage.")
     elif not _INPUT_RASTER:
@@ -84,8 +86,8 @@ if __name__ == "__main__":
 
         for m in _MATCH_ARRAYS:
             focal=r
-            focal.array=focal.binary_reclass(match=_MATCH_ARRAYS[m])
-            sys.stdout.write(str(m))
+            if _MATCH_ARRAYS[m] is not None:
+                focal.array=focal.binary_reclass(match=_MATCH_ARRAYS[m])
             for window in _WINDOW_DIMS:
                 filename=str(m+"_"+str(window)+"x"+str(window))
                 generic_filter(r = focal, function = _FUNCTION, size=window, destfile = filename)
