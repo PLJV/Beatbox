@@ -16,8 +16,16 @@ import re
 
 from beatbox import *
 
+def cat(string=None):
+    ''' print minus the implied \n'''
+    sys.stdout.write(string)
+    sys.stdout.flush()
+
 def print_usage():
-    print("usage: " + sys.argv[0] + "-r <raster file> -mw <window size in pixels> -reclass <match array> -function <function name>")
+    print("moving windows")
+    print("usage: " + sys.argv[0] + " -r <raster file> -reclass <match array> -mw <window size in pixels> -function <function name>")
+    print("example: " + sys.argv[0] + " -r nass_2016.tif -reclass row_crop=1,2,3;wheat=2,7 -mw 3,11,33 -function numpy.sum")
+    sys.exit(0)
 
 if __name__ == "__main__":
     # required parameters
@@ -30,21 +38,29 @@ if __name__ == "__main__":
     # process runtime arguments
     for i, arg in enumerate(sys.argv):
         arg.replace("--", "-")
-        if arg == "-r":
+        if arg == "-u":
+            print_usage()
+        elif arg == "-r":
             _INPUT_RASTER=sys.argv[i + 1]
         elif arg == "-t":
             _TARGET_RECLASS_VALUE=list(map(int, sys.argv[i + 1].split(',')))
         elif arg == "-function":
             try:
-                _FUNCTION=globals()[sys.argv[i + 1]] # assume user wants an explicit function : e.g., "numpy.min"
+                function = sys.argv[i + 1]
+                if re.search(string=function,pattern="\."):
+                    function = function.split(".")
+                    _FUNCTION=getattr(globals()[function[0]],function[1]) # assume user wants an explicit function : e.g., "numpy.min"
+                else:
+                    _FUNCTION=globals()[function]()
             except Exception as e:
-                if re.search(sys.argv[i + 1].lower(), "sum"):
+                if re.search(function.lower(), "sum"):
                     _FUNCTION=numpy.sum
-                elif re.search(sys.argv[i + 1].lower(), "mean"):
+                elif re.search(function.lower(), "mean"):
                     _FUNCTION=numpy.mean
-                elif re.search(sys.argv[i + 1].lower(), "sd"):
+                elif re.search(function.lower(), "sd"):
                     _FUNCTION=numpy.std
                 else:
+                    print("couldn't handle the -function specified at runtime. see: -u for usage.")
                     raise e
         elif arg == "-mw":
             _WINDOW_DIMS=list(map(int, sys.argv[i + 1].split(',')))
@@ -56,20 +72,21 @@ if __name__ == "__main__":
 
     # sanity-check user input
     if not _WINDOW_DIMS:
-        raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime")
+        raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime. see -u for usage.")
     elif not _INPUT_RASTER:
-        raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime")
+        raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime. see -u for usage.")
 
     # process any re-classification requests prior to our moving windows analysis if asked
     if _MATCH_ARRAYS:
         r=Raster(file=_INPUT_RASTER)
 
-        sys.stdout.write(" -- performing moving window analyses: ")
+        cat(" -- performing moving window analyses: ")
 
         for m in _MATCH_ARRAYS:
-            focal = r
-            focal.array =focal.binary_reclass(match=_MATCH_ARRAYS[m])
+            focal=r
+            focal.array=focal.binary_reclass(match=_MATCH_ARRAYS[m])
             sys.stdout.write(str(m))
             for window in _WINDOW_DIMS:
                 filename=str(m+"_"+str(window)+"x"+str(window))
                 generic_filter(r = focal, function = _FUNCTION, size=window, destfile = filename)
+                cat(".")
