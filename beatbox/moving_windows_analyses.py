@@ -10,7 +10,6 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
 
-import sys
 import os
 import re
 import numpy
@@ -31,20 +30,25 @@ def gen_circular_array(nPixels=None):
 
 def _dict_to_mwindow_filename(key=None, window_size=None):
     """ quick kludging to generate a filename from key + window size """
-    return(str(key)+"_"+str(window_size)+"x"+str(window_size))
+    return str(key)+"_"+str(window_size)+"x"+str(window_size)
 
-def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=True, function=None, size=None, dtype='uint16'):
-    """ wrapper for ndimage.generic_filter that can comprehend a GeoRaster, apply a common circular buffer, and writes a numpy
-    array to disk following user specifications
+def generic_filter(r=None, destfile=None, write=True, footprint=None,
+                   overwrite=True, function=None, size=None, dtype='uint16'):
+    """ wrapper for ndimage.generic_filter that can comprehend a GeoRaster,
+    apply a common circular buffer, and writes a numpy array to disk following
+    user specifications
     """
     try:
-        _WRITE_FILE = ((not os.path.isfile(destfile)) | overwrite) & write & (type(destfile) is not None)
+        _WRITE_FILE = ((not os.path.isfile(destfile)) | overwrite) & write \
+        & (destfile is not None)
     except TypeError as e:
         _WRITE_FILE = False
     try:
-        _FOOTPRINT = footprint if footprint is True else numpy.array(gen_circular_array(nPixels=size//2))
+        _FOOTPRINT = footprint if footprint is True else \
+        numpy.array(gen_circular_array(nPixels=size//2))
     except TypeError as e:
-        print("You may have missed a size= or footprint= argument to generic_filter()")
+        print("You may have missed a size= or footprint= argument to \
+        generic_filter()")
         raise e
     # lazy duck type and apply ndimage filter to user specifications
     try:
@@ -68,11 +72,12 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     # either save to disk or return to user
     if _WRITE_FILE:
         try:
-            destfile=destfile.replace(".tif","") # gdal will append a filename extension for us
-            r.array=image
-            r.write(dst_filname = str(destfile))
+            destfile = destfile.replace(".tif", "") # gdal will append for us
+            r.array = image
+            r.write(dst_filname=str(destfile))
         except Exception as e:
-            print(e + "doesn't appear to be a Raster object; returning generic_filter result to user")
+            print(e + "doesn't appear to be a Raster object; returning \
+            generic_filter result to user")
             return image
     else:
         return image
