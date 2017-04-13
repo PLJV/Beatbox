@@ -65,68 +65,14 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None, overwrite=
     except ValueError as e:
         print("You may have missed a function= argument to generic_filter()")
         raise e
+
     # either save to disk or return to user
     if _WRITE_FILE:
         try:
             r.array=image
-            r.write(dst_filname = str(destfile))
-        except Exception as e:
+            r.write(dst_filename = str(destfile))
+        except AttributeError as e:
             print(e + "doesn't appear to be a Raster object; returning generic_filter result to user")
             return image
     else:
         return image
-
-
-if __name__ == "__main__":
-    # required parameters
-    _INPUT_RASTER=None
-    _IS_NASS=True
-    _FUNCTION=numpy.sum
-    _WINDOW_DIMS=[]
-    _MATCH_ARRAYS={}
-    _TARGET_RECLASS_VALUE=1
-    # process runtime arguments
-    for i, arg in enumerate(sys.argv):
-        arg.replace("--", "-")
-        if arg == "-r":
-            _INPUT_RASTER=sys.argv[i + 1]
-        elif arg == "-t":
-            _TARGET_RECLASS_VALUE=list(map(int, sys.argv[i + 1].split(',')))
-        elif arg == "-nass":
-            _IS_NASS=True
-        elif arg == "-function":
-            if re.search(sys.argv[i + 1].lower(), "sum"):
-                _FUNCTION=numpy.sum
-            elif re.search(sys.argv[i + 1].lower(), "mean"):
-                _FUNCTION=numpy.mean
-            elif re.search(sys.argv[i + 1].lower(), "sd"):
-                _FUNCTION=numpy.std
-        elif arg == "-mw":
-            _WINDOW_DIMS=list(map(int, sys.argv[i + 1].split(',')))
-        elif arg == "-reclass":  # e.g., "row_crop=12,34;cereal=2,3;corn=1,10"
-            classes=sys.argv[i + 1].split(";")
-            for c in classes:
-                c=c.split("=")
-                _MATCH_ARRAYS[c[0]]=list(map(int, c[1].split(",")))
-    # sanity-check
-    if not _WINDOW_DIMS:
-        raise ValueError("moving window dimensions need to be specified using the -mw argument at runtime")
-    elif not _INPUT_RASTER:
-        raise ValueError("this analysis requires a NASS input raster specified with -r argument at runtime")
-
-    # process any re-classification requests prior to our moving windows analysis if asked
-    if _MATCH_ARRAYS:
-        if _IS_NASS:
-            r=Raster(file=_INPUT_RASTER)
-            r.array = numpy.array(r.array, dtype='uint16') # anticipating composition metric calculations ?
-        else:
-            r=Raster(file=_INPUT_RASTER)
-
-        print(" -- performing moving window analyses")
-
-        for m in _MATCH_ARRAYS:
-            _MATCH_ARRAYS[m]=r.binary_reclass(match=_MATCH_ARRAYS[m])
-            for window in _WINDOW_DIMS:
-                filename=_dict_to_mwindow_filename(key=m, window_size=window)
-                generic_filter(r = _MATCH_ARRAYS[m], function = _FUNCTION,
-                               size = window, destfile = filename)
