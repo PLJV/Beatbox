@@ -22,11 +22,11 @@ def cat(string=None):
     sys.stdout.flush()
 
 def print_usage():
-    print("moving windows")
-    print("usage:   " + sys.argv[0] + " -r <raster file> -reclass <match array>\
-     -mw <window size in pixels> -function <function name>")
-    print("example: " + sys.argv[0] + " -r nass_2016.tif -reclass row_crop=1,2,\
-    3;wheat=2,7 -mw 3,11,33 -function numpy.sum")
+    print(sys.argv[0]," : calculate raster statistics along a user-specified 'roving' windows buffer")
+    print("usage:   " + sys.argv[0] + " -r <raster file> -reclass <match array>"
+    " -mw <window size in pixels> -function <function name>")
+    print("example: " + sys.argv[0] + " -r nass_2016.tif -reclass row_crop=1,2,"
+    " 3;wheat=2,7 -mw 3,11,33 -function numpy.sum")
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -37,6 +37,7 @@ if __name__ == "__main__":
     _WINDOW_DIMS=[]
     _MATCH_ARRAYS={}
     # process runtime arguments
+    if len(sys.argv) == 1: print_usage()
     for i, arg in enumerate(sys.argv):
         arg.replace("--", "-")
         if arg == "-u":
@@ -62,8 +63,8 @@ if __name__ == "__main__":
                 elif re.search(function.lower(), "sd"):
                     _FUNCTION=numpy.std
                 else:
-                    print("couldn't handle the -function specified at runtime. \
-                    see: -u for usage.")
+                    print("couldn't handle the -function specified at runtime."
+                    "see: -u for usage.")
                     raise e
         elif arg == "-mw":
             _WINDOW_DIMS=list(map(int, sys.argv[i + 1].split(',')))
@@ -77,11 +78,11 @@ if __name__ == "__main__":
     if not _MATCH_ARRAYS:
         _MATCH_ARRAYS['output'] = None
     if not _WINDOW_DIMS:
-        raise ValueError("moving window dimensions need to be specified using \
-        the -mw argument at runtime. see -u for usage.")
+        raise ValueError("moving window dimensions need to be specified using"
+        "the -mw argument at runtime. see -u for usage.")
     elif not _INPUT_RASTER:
-        raise ValueError("this analysis requires a NASS input raster specified \
-        with -r argument at runtime. see -u for usage.")
+        raise ValueError("this analysis requires a NASS input raster specified"
+        "with -r argument at runtime. see -u for usage.")
 
     # process any re-classification requests prior to our filtering if asked
     if _MATCH_ARRAYS:

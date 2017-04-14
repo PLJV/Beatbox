@@ -1,14 +1,16 @@
 """
 Setup Script
 """
+
+import os
+import platform
+
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
-try:
-    import versioneer
-except ImportError as e:
-    print(e)
+
+from shutil import copyfile
 
 INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn', 'psutil', 'requests', 'bs4']
 LONG_DESCRIPTION = ""
@@ -23,3 +25,13 @@ setup(name='beatbox',
       long_description=LONG_DESCRIPTION,
       packages=['beatbox'],
       install_requires=INSTALL_REQUIRES)
+
+if platform.system().lower() is not "windows":
+    if os.path.exists(os.path.abspath("/usr/local/bin")):
+        dst = os.path.abspath("/usr/local/bin/moving_windows")
+    elif os.path.exists(os.path.abspath("/opt/bin")):
+        dst = os.path.abspath("/opt/bin/moving_windows")
+    elif os.path.exists(os.path.abspath("/usr/bin")):
+        dst = os.path.abspath("/usr/bin/moving_windows")
+    copyfile(os.path.abspath("scripts/moving_windows"), dst)
+    os.chmod(dst, 0o755)
