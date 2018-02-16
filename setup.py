@@ -25,13 +25,3 @@ setup(name='beatbox',
       long_description=LONG_DESCRIPTION,
       packages=['beatbox'],
       install_requires=INSTALL_REQUIRES)
-
-if platform.system().lower() is not "windows":
-    if os.path.exists(os.path.abspath("/usr/local/bin")):
-        dst = os.path.abspath("/usr/local/bin/moving_windows")
-    elif os.path.exists(os.path.abspath("/opt/bin")):
-        dst = os.path.abspath("/opt/bin/moving_windows")
-    elif os.path.exists(os.path.abspath("/usr/bin")):
-        dst = os.path.abspath("/usr/bin/moving_windows")
-    copyfile(os.path.abspath("scripts/moving_windows"), dst)
-    os.chmod(dst, 0o755)
