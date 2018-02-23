@@ -62,7 +62,7 @@ class Raster(georasters.GeoRaster):
             assume_unique=True, invert=invert), dtype='uint8'),
             self.array.shape)
 
-    def mask(self, shape=None):
+    def crop(self, shape=None):
         """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
         try:
             gr = self.to_georaster()
@@ -74,9 +74,9 @@ class Raster(georasters.GeoRaster):
     def clip(self, *args, **kwargs):
         """overrides the clip of our GeoRasters base class with mask"""
         if 'shape' in list(map(str.lower, kwargs.keys())):
-            self.mask(shape=kwargs['shape'])
+            self.crop(shape=kwargs['shape'])
         else:
-            self.mask(args[0])
+            self.crop(args[0])
 
     def merge(self, array=None, **kwargs):
         """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
