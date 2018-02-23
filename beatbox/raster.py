@@ -13,15 +13,19 @@ from tempfile import mkdtemp
 class Raster(georasters.GeoRaster):
     """Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)."""
-    def __init__(self,**kwargs):
+    def __init__(self, *args, **kwargs):
         """Raster constructor."""
-        try:
-            self.array = kwargs['array']
-        except KeyError:
+        if 'crs' in list(map(str.lower, kwargs.keys())):
             self.array = None
-        self.open(kwargs['file'])
-        # for i, arg in enumerate(kwargs):
-        #     pass
+            self.open(kwargs['file'])
+        else:
+            # assume the array is the first positional arg
+            try:
+                self.array = None
+                self.open(args[0])
+            except Exception as e:
+                raise e
+
 
     def open(self, file=None):
         """Does what it says."""
@@ -42,6 +46,13 @@ class Raster(georasters.GeoRaster):
         """map the contents of r.array to disk using numpy.memmap"""
         pass
 
+    def to_georaster(self):
+        return(georasters.GeoRaster(self.array,
+                             self.geot,
+                             nodata_value=self.ndv,
+                             projection=self.projection,
+                             datatype=self.array.dtype))
+
     def binary_reclass(self, match=None, filter=None, invert=False):
         """ binary reclassification of input data. All cell values in
         self.array are reclassified as uint8(boolean) based on whether they
@@ -50,6 +61,15 @@ class Raster(georasters.GeoRaster):
         return numpy.reshape(numpy.array(numpy.in1d(self.array, match,
             assume_unique=True, invert=invert), dtype='uint8'),
             self.array.shape)
+
+    def mask(self, shape=None):
+        """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
+        try:
+            gr = self.to_georaster()
+            self.array = gr.clip(shape)
+
+        except Exception as e:
+            raise e
 
     def merge(self, array=None, **kwargs):
         """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""

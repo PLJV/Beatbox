@@ -18,7 +18,8 @@ from copy import copy
 _METERS_TO_DEGREES = 111000
 _DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 
-class Shapefile:
+
+class Vector:
     def __init__(self, *args, **kwargs):
         """Handles file input/output operations for shapefiles
         using fiona and shapely built-ins"""
@@ -76,6 +77,15 @@ class Shapefile:
         except Exception as e:
             raise e
 
+    def to_collection(self):
+        collection = fiona.collection
+        collection.crs = self._crs
+        collection.schema = self._schema
+        return(collection)
+
+    def to_geopandas(self):
+        pass
+
     @property
     def filename(self):
         return self._filename
@@ -99,7 +109,7 @@ class Shapefile:
         if 'crs' in list(map(str.lower, kwargs.keys())):
             self._crs = kwargs['crs']
         else:
-            # assume the schema is the third positional arg
+            # assume the schema is the first positional arg
             try:
                 self._crs = args[0]
             # no positional arg? try to extract a schema from _geometries
@@ -166,35 +176,31 @@ class Shapefile:
         except Exception:
             pass
 
+    @classmethod
+    def buffer(vector, *args, **kwargs):
+        """Buffer a shapely geometry collection by some user-specified
+        distance"""
+        if 'width' in list(map(str.lower, kwargs.keys())):
+            _width = int(kwargs['width'])
+        else:
+            try:
+                _width = int(args[1])
+            except Exception as e:
+                raise e
+        # check and see if we are working in unit meters or degrees
+        if vector._crs_wkt.find('Degree') > 0:
+            _width = _DEGREES_TO_METERS * _width
+        # build a schema for our buffering operations
+        target_schema = vector.schema
+        target_schema['geometry'] = 'MultiPolygon'
+        # iterate our feature geometries and cast the output geometry as
+        # a MultiPolygon geometry
+        vector.schema = target_schema
+        vector.geometries = MultiPolygon(
+            [shape(ft['geometry']).buffer(_width)
+             for ft in vector.geometries])
 
-def buffer(*args, **kwargs):
-    """Buffer a shapely geometry collection by some user-specified
-    distance. This will modify a linked shapefile object """
-    if 's' in list(map(str.lower, kwargs.keys())):
-        _shapefile = kwargs['s']
-    else:
-        try:
-            _shapefile = args[0]
-        except Exception as e:
-            raise e
-    if 'width' in list(map(str.lower, kwargs.keys())):
-        _width = int(kwargs['width'])
-    else:
-        try:
-            _width = int(args[1])
-        except Exception as e:
-            raise e
-    # check and see if we are working in unit meters or degrees
-    if _shapefile._crs_wkt.find('Degree') > 0:
-        _width = _DEGREES_TO_METERS * _width
-    # build a schema for our buffering operations
-    target_schema = _shapefile.schema
-    target_schema['geometry'] = 'MultiPolygon'
-    # iterate our feature geometries and cast the output geometry as
-    # a MultiPolygon geometry
-    _shapefile.schema = target_schema
-    _shapefile.geometries = MultiPolygon(
-        [shape(ft['geometry']).buffer(_width)
-        for ft in _shapefile.geometries])
+        return (vector)
 
-    return(_shapefile)
+
+
