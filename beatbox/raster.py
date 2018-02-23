@@ -38,7 +38,7 @@ class Raster(georasters.GeoRaster):
         self.array = numpy.ma.masked_array(self.array, mask=self.array == self.ndv, fill_value=self.ndv)
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
-        """Wrapper for georasters create_geotiff that writes a numpy array to disk."""
+        """wrapper for georasters create_geotiff that writes a numpy array to disk."""
         georasters.create_geotiff(name=dst_filename, Array=self.array, geot=self.geot, projection=self.projection,
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
@@ -70,6 +70,13 @@ class Raster(georasters.GeoRaster):
 
         except Exception as e:
             raise e
+
+    def clip(self, *args, **kwargs):
+        """overrides the clip of our GeoRasters base class with mask"""
+        if 'shape' in list(map(str.lower, kwargs.keys())):
+            self.mask(shape=kwargs['shape'])
+        else:
+            self.mask(args[0])
 
     def merge(self, array=None, **kwargs):
         """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""

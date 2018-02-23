@@ -78,10 +78,7 @@ class Vector:
             raise e
 
     def to_collection(self):
-        collection = fiona.collection
-        collection.crs = self._crs
-        collection.schema = self._schema
-        return(collection)
+      return(self.geometries)
 
     def to_geopandas(self):
         pass
@@ -201,6 +198,3 @@ class Vector:
              for ft in vector.geometries])
 
         return (vector)
-
-
-
