@@ -57,9 +57,11 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None,
         image = r
     # wrap across ndimage.generic_filter
     try:
-        image = ndimage.generic_filter(input=numpy.array(image, dtype=dtype),
-                                       function=function,
-                                       footprint=_FOOTPRINT)
+        image = ndimage.generic_filter(
+            input=numpy.array(image, dtype=dtype),
+            function=function,
+            footprint=_FOOTPRINT
+        cd )
     except RuntimeError as e:
         if re.search(e, "function"):
             print("function= argument cannot be None")

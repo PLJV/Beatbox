@@ -12,7 +12,7 @@ from tempfile import mkdtemp
 
 
 class Raster:
-    """Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
+    """Raster class is a wrapper meant to extend the functionality of the GeoRaster class
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)."""
     def __init__(self, *args, **kwargs):
         """Raster constructor."""
@@ -73,7 +73,7 @@ class Raster:
             raise e
 
     def clip(self, *args, **kwargs):
-        """overrides the clip of our GeoRasters base class with mask"""
+        """clip is a hold-over from gr that performs a crop operation"""
         if 'shape' in list(map(str.lower, kwargs.keys())):
             self.crop(shape=kwargs['shape'])
         else:

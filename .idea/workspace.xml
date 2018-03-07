@@ -1,8 +1,178 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="BookmarkManager">
+    <bookmark url="file://$PROJECT_DIR$/setup.py" line="13" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="8af54114-d8aa-46a6-b796-5315ff93695e" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/beatbox/raster.py" afterPath="$PROJECT_DIR$/beatbox/raster.py" />
+    <list default="true" id="8af54114-d8aa-46a6-b796-5315ff93695e" name="Default" comment="Breaking inheritance from georasters, because it makes manipulating Raster classes cumbersome and we aren't really using all of the parent classes methods in most contexts anyway.">
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/activate" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/activate.csh" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/activate.fish" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/activate_this.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/easy_install" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/easy_install-3.6" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/pip" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/pip3" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/pip3.6" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/python" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/python-config" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/python3" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/python3.6" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/bin/wheel" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/__future__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/_bootlocale.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/_collections_abc.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/_dummy_thread.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/_weakrefset.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/abc.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/base64.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/bisect.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/codecs.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/copy.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/copyreg.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/distutils/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/distutils/distutils.cfg" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/enum.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/fnmatch.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/functools.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/genericpath.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/hashlib.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/heapq.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/hmac.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/imp.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/io.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/keyword.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/linecache.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/locale.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/ntpath.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/operator.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/orig-prefix.txt" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/os.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/posixpath.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/random.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/re.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/reprlib.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/rlcompleter.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/shutil.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/easy_install.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/__main__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/appdirs.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/colorama/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/colorama/ansi.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/colorama/ansitowin32.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/colorama/initialise.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/colorama/win32.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/colorama/winterm.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/_backport/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/_backport/misc.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/_backport/shutil.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/_backport/sysconfig.cfg" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/_backport/sysconfig.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/_backport/tarfile.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/compat.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/database.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/index.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/locators.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/manifest.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/markers.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/metadata.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/resources.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/scripts.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/t32.exe" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/t64.exe" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/util.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/version.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/w32.exe" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/w64.exe" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distlib/wheel.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/distro.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_ihatexml.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_inputstream.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_tokenizer.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_trie/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_trie/_base.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_trie/datrie.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_trie/py.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/_utils.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/constants.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/filters/alphabeticalattributes.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/filters/lint.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/filters/optionaltags.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/filters/sanitizer.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/filters/whitespace.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/html5parser.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/html5lib/serializer.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/ipaddress.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/ordereddict.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/pyparsing.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/re-vendor.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/retrying.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/_vendor/six.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/basecommand.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/baseparser.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/cmdoptions.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/compat/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/compat/dictconfig.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/download.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/exceptions.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/index.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/locations.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/models/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/models/index.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/pep425tags.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/req/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/req/req_file.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/req/req_install.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/req/req_set.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/req/req_uninstall.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/status_codes.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/appdirs.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/build.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/deprecation.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/encoding.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/filesystem.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/glibc.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/hashes.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/logging.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/outdated.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/packaging.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/setuptools_build.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/utils/ui.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/vcs/__init__.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/vcs/bazaar.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/vcs/git.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/vcs/mercurial.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/vcs/subversion.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site-packages/pip/wheel.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/site.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/sre_compile.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/sre_constants.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/sre_parse.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/stat.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/struct.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/tarfile.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/tempfile.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/token.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/tokenize.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/types.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/warnings.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/lib/python3.6/weakref.py" />
+      <change beforePath="" afterPath="$PROJECT_DIR$/venv/pip-selfcheck.json" />
+      <change beforePath="$PROJECT_DIR$/.idea/Beatbox.iml" afterPath="$PROJECT_DIR$/.idea/Beatbox.iml" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="$PROJECT_DIR$/.idea/modules.xml" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change beforePath="$PROJECT_DIR$/beatbox/cost_optimization.py" afterPath="" />
+      <change beforePath="$PROJECT_DIR$/beatbox/moving_windows_analyses.py" afterPath="$PROJECT_DIR$/beatbox/moving_windows_analyses.py" />
+      <change beforePath="$PROJECT_DIR$/beatbox/raster.py" afterPath="$PROJECT_DIR$/beatbox/raster.py" />
+      <change beforePath="$PROJECT_DIR$/setup.py" afterPath="$PROJECT_DIR$/setup.py" />
+      <change beforePath="$PROJECT_DIR$/../SurfaceHydroViewer/ee_generate_surface_wetness_assets.py" afterPath="$PROJECT_DIR$/../SurfaceHydroViewer/ee_generate_surface_wetness_assets.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -15,7 +185,18 @@
     <option name="PATCH_PATH" value="" />
   </component>
   <component name="FileEditorManager">
-    <leaf />
+    <leaf>
+      <file leaf-file-name="moving_windows_analyses.py" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/beatbox/moving_windows_analyses.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="900">
+              <caret line="63" column="11" lean-forward="false" selection-start-line="63" selection-start-column="11" selection-end-line="63" selection-end-column="11" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -23,23 +204,26 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/beatbox/moving_windows_analyses.py" />
+        <option value="$PROJECT_DIR$/../SurfaceHydroViewer/gen_surface_hydro_product.py" />
+        <option value="$PROJECT_DIR$/../SurfaceHydroViewer/ee_generate_surface_wetness_assets.py" />
         <option value="$PROJECT_DIR$/beatbox/raster.py" />
+        <option value="$PROJECT_DIR$/beatbox/cost_optimization.py" />
+        <option value="$PROJECT_DIR$/beatbox/moving_windows_analyses.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="y" value="30" />
-    <option name="width" value="1280" />
-    <option name="height" value="767" />
+  <component name="ProjectFrameBounds" extendedState="6" fullScreen="true">
+    <option name="x" value="1799" />
+    <option name="width" value="1390" />
+    <option name="height" value="985" />
   </component>
-  <component name="ProjectLevelVcsManager">
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="1" id="Add" />
   </component>
   <component name="ProjectView">
-    <navigator proportions="" version="1">
+    <navigator currentView="ProjectPane" proportions="" version="1">
       <flattenPackages />
-      <showMembers />
+      <showMembers ProjectPane="true" />
       <showModules />
       <showLibraryContents />
       <hideEmptyPackages />
@@ -50,11 +234,61 @@
       <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
-    <panes />
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="beatbox" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="downloaders.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="moving_windows_analyses.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="raster.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="vector.py" type="8704e2dd:PyFileNode" />
+            </path>
+            <path>
+              <item name="Beatbox" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="beatbox" type="462c0819:PsiDirectoryNode" />
+              <item name="vector.py" type="8704e2dd:PyFileNode" />
+              <item name="Vector" type="dd8bbb05:PyElementNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+      <pane id="Scratches" />
+    </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../OpenIMBCR" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="last_opened_file_path" value="/opt/anaconda/anaconda3" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -218,33 +452,96 @@
       <option name="presentableId" value="Default" />
       <updated>1490309345003</updated>
     </task>
+    <task id="LOCAL-00001" summary="Breaking inheritance from georasters, because it makes manipulating Raster classes cumbersome and we aren't really using all of the parent classes methods in most contexts anyway.">
+      <created>1520449168884</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1520449168884</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="30" width="1280" height="767" extended-state="0" />
+    <frame x="1680" y="-37" width="1680" height="1087" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.20546874" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.21547619" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="R Packages" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="R Graphics" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32934132" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32969433" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.3295238" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.24984653" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
-      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
     </layout>
+    <layout-to-restore>
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32934132" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32969433" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32934782" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.17517328" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="combo" />
+      <window_info id="R Packages" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="R Graphics" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
+      <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+    </layout-to-restore>
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="RECENTLY_FILTERED_USER_GROUPS">
+                <collection />
+              </option>
+              <option name="RECENTLY_FILTERED_BRANCH_GROUPS">
+                <collection />
+              </option>
+              <option name="COLUMN_ORDER">
+                <list>
+                  <option value="0" />
+                  <option value="1" />
+                  <option value="2" />
+                  <option value="3" />
+                </list>
+              </option>
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsContentAnnotationSettings">
     <option name="myLimit" value="2678400000" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Breaking inheritance from georasters, because it makes manipulating Raster classes cumbersome and we aren't really using all of the parent classes methods in most contexts anyway." />
+    <option name="LAST_COMMIT_MESSAGE" value="Breaking inheritance from georasters, because it makes manipulating Raster classes cumbersome and we aren't really using all of the parent classes methods in most contexts anyway." />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -309,17 +606,63 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../SurfaceHydroViewer/server.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../SurfaceHydroViewer/gen_surface_hydro_product.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="314">
+          <caret line="34" column="21" lean-forward="true" selection-start-line="34" selection-start-column="21" selection-end-line="34" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../SurfaceHydroViewer/ee_generate_surface_wetness_assets.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="22" column="0" lean-forward="true" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
+          <folding>
+            <element signature="e#106#119#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="20" column="24" lean-forward="true" selection-start-line="20" selection-start-column="24" selection-end-line="20" selection-end-column="24" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/beatbox/raster.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="601">
-          <caret line="97" column="7" lean-forward="false" selection-start-line="97" selection-start-column="7" selection-end-line="97" selection-end-column="7" />
+        <state relative-caret-position="165">
+          <caret line="11" column="0" lean-forward="false" selection-start-line="11" selection-start-column="0" selection-end-line="11" selection-end-column="0" />
+          <folding>
+            <element signature="e#107#119#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/beatbox/cost_optimization.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="795">
+          <caret line="53" column="25" lean-forward="false" selection-start-line="53" selection-start-column="25" selection-end-line="53" selection-end-column="25" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/beatbox/moving_windows_analyses.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="445">
-          <caret line="127" column="0" lean-forward="false" selection-start-line="127" selection-start-column="0" selection-end-line="127" selection-end-column="0" />
+        <state relative-caret-position="900">
+          <caret line="63" column="11" lean-forward="false" selection-start-line="63" selection-start-column="11" selection-end-line="63" selection-end-column="11" />
+          <folding />
         </state>
       </provider>
     </entry>

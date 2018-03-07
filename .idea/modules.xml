@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Beatbox.iml" filepath="$PROJECT_DIR$/.idea/Beatbox.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../SurfaceHydroViewer/.idea/SurfaceHydroViewer.iml" filepath="$PROJECT_DIR$/../SurfaceHydroViewer/.idea/SurfaceHydroViewer.iml" />
     </modules>
   </component>
 </project>
