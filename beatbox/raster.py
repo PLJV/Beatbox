@@ -10,7 +10,8 @@ import psutil
 
 from tempfile import mkdtemp
 
-class Raster(georasters.GeoRaster):
+
+class Raster:
     """Raster class is a wrapper meant to extend the functionality of the GeoRaster base class
     :arg file string specifying the full path to a raster file (typically a GeoTIFF)."""
     def __init__(self, *args, **kwargs):
