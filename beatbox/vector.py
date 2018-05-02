@@ -107,7 +107,7 @@ class Vector:
 
     def to_collection(self):
         """ return a collection of our geometry data """
-      return(self.geometries)
+        return(self.geometries)
 
     def to_geopandas(self):
         """ return our spatial data as a geopandas dataframe """
