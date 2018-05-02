@@ -221,4 +221,13 @@ class Vector:
         return (vector)
     @classmethod
     def convex_hull(vector, *args, **kwargs): 
+        """ Returns the convex hull of our focal Vector class """
+        pass
+    @classmethod
+    def intersection(vector, *args, **kwargs):
+        """ Returns the intersection of our focal Vector class with another Vector class """
+        pass
+    @classmethod
+    def over(vector, *args, **kwargs):
+        """ Returns a boolean vector of overlapping features of our focal Vector class with another Vector class """
         pass
