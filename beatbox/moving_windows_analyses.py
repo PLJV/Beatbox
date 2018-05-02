@@ -61,7 +61,7 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None,
             input=numpy.array(image, dtype=dtype),
             function=function,
             footprint=_FOOTPRINT
-        cd )
+        )
     except RuntimeError as e:
         if re.search(e, "function"):
             print("function= argument cannot be None")
