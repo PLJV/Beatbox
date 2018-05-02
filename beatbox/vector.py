@@ -22,8 +22,8 @@ _DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 class Vector:
     def __init__(self, *args, **kwargs):
         """Handles file input/output operations for shapefiles\
-        using fiona and shapely built-ins and performs select\
-        spatial modifications on vector datasets
+         using fiona and shapely built-ins and performs select\
+         spatial modifications on vector datasets
         
         Keyword arguments:
         filename -- the full path filename to a vector dataset (typically a .shp file)
@@ -48,8 +48,8 @@ class Vector:
                 pass
 
     def read(self, *args, **kwargs):
-        """Short-hand wrapper for fiona.open() that assigns class variables for
-        CRS, geometry, and schema.
+        """Short-hand wrapper for fiona.open() that assigns class variables for\
+         CRS, geometry, and schema.
         
         Keyword arguments:
         filename -- the full path filename to a vector dataset (typically a .shp file)
