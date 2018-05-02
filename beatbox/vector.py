@@ -198,3 +198,6 @@ class Vector:
              for ft in vector.geometries])
 
         return (vector)
+    @classmethod
+    def convex_hull(vector, *args, **kwargs): 
+        pass
