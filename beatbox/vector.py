@@ -22,7 +22,13 @@ _DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 class Vector:
     def __init__(self, *args, **kwargs):
         """Handles file input/output operations for shapefiles
-        using fiona and shapely built-ins"""
+        using fiona and shapely built-ins
+        
+        Keyword arguments:
+        filename -- the full path filename to a vector dataset (typically a .shp file)
+        Positional arguments:
+        1st -- if no keyword argument was used, attempt to .read the first pos argument
+        """
 
         self._geometries = []
         self._filename = []
@@ -41,26 +47,47 @@ class Vector:
                 pass
 
     def read(self, *args, **kwargs):
-        """Short-hand wrapper for fiona.open()."""
+        """Short-hand wrapper for fiona.open() that assigns class variables for
+        CRS, geometry, and schema.
+        
+        Keyword arguments:
+        filename -- the full path filename to a vector dataset (typically a .shp file)
+        Positional arguments:
+        1st -- if no keyword argument was used, attempt to .read the first pos argument
+        """
         if 'filename' in list(map(str.lower, kwargs.keys())):
-            self.filename = kwargs['filename']
+            self._filename = kwargs['filename']
         else:
             try:
-                self.filename = args[0]
-            except Exception:
-                pass
+                self._filename = args[0]
+            except Exception as e:
+                raise e
 
         shape_collection = fiona.open(self._filename)
 
         try:
-            self.crs = shape_collection.crs
+            self._crs = shape_collection.crs
             self._crs_wkt = shape_collection.crs_wkt
-            self.geometries = shape_collection
-            self.schema = shape_collection.schema
+            self._geometries = shape_collection
+            self._schema = shape_collection.schema
         except Exception as e:
             raise e
 
-    def write(self):
+    def write(self, *args, **kwargs):
+        """ wrapper for fiona.open that will write in-class geometry data to disk
+        
+        (Optional) Keyword arguments:
+        filename -- the full path filename to a vector dataset (typically a .shp file)
+        (Optional) Positional arguments:
+        1st -- if no keyword argument was used, attempt to .read the first pos argument
+        """
+        if 'filename' in list(map(str.lower, kwargs.keys())):
+            self._filename = kwargs['filename']
+        else:
+            try:
+                self._filename = args[0]
+            except Exception as e:
+                pass # assume we previously defined a _filename to use for our write()
         try:
             # call fiona to write our geometry to disk
             with fiona.open(
@@ -78,17 +105,21 @@ class Vector:
             raise e
 
     def to_collection(self):
+        """ return a collection of our geometry data """
       return(self.geometries)
 
     def to_geopandas(self):
+        """ return our spatial data as a geopandas dataframe """
         pass
 
     @property
     def filename(self):
+        """ decorated getter for our filename """
         return self._filename
 
     @filename.setter
     def filename(self, *args, **kwargs):
+        """ decoratted setter for our filename """ 
         if 'filename' in list(map(str.lower, kwargs.keys())):
             self._filename = kwargs['filename']
         else:
@@ -99,79 +130,69 @@ class Vector:
 
     @property
     def crs(self):
+        """ decorated getter for our Coordinate Reference System """
         return(self._crs)
 
     @crs.setter
-    def crs(self, *args, **kwargs):
-        if 'crs' in list(map(str.lower, kwargs.keys())):
-            self._crs = kwargs['crs']
-        else:
-            # assume the schema is the first positional arg
-            try:
-                self._crs = args[0]
-            # no positional arg? try to extract a schema from _geometries
-            except Exception as e:
-                raise e
+    def crs(self, *args):
+        """ decorated setter for our Coordinate Reference System """
+        try:
+          self._crs = args[0]
+        except Exception as e:
+          raise e
 
     @property
     def schema(self):
+        """ decorated getter for our schema """
         return(self._schema)
 
     @schema.setter
-    def schema(self, *args, **kwargs):
-        # by default, use the feature geometry schema passed by the user -- if
-        # there wasn't one passed, use what we pull from our input geometry
-        if 'schema' in list(map(str.lower, kwargs.keys())):
-            self._schema = kwargs['schema']
-        else:
-            # assume the schema is the third positional arg
-            try:
-                self._schema = args[0]
-            # no positional arg? try to extract a schema from _geometries
-            except Exception:
-                self._schema = self._geometries.schema
+    def schema(self, *args):
+        """ decorated setter for our schema """
+        try:
+            self._schema = args[0]
+        except Exception:
+            self._schema = self._geometries.schema
 
     @property
     def geometries(self):
+        """ decorated getter for our geometries """
         return(self._geometries)
 
     @geometries.setter
-    def geometries(self, *args, **kwargs):
-        if 'geometries' in list(map(str.lower, kwargs.keys())):
-            self._geometries = kwargs['geometries']
-        else:
-            try:
-                self._geometries = args[0]
-            except Exception as e:
-                raise e
-        # default behavior is to accept shapely geometry as input, but a
-        # user may pass a string path to a shapefile and we will handle the input
-        # and write it to output -- this is essentially a file copy operation
-        try:
-            self.read(self._geometries)
+    def geometries(self, *args):
+      try:
+        self._geometries = args[0]
+      except Exception as e:
+        raise e
+      # default behavior is to accept shapely geometry as input, but a
+      # user may pass a string path to a shapefile and we will handle the input
+      # and write it to output -- this is essentially a file copy operation
+      try:
+        self.read(self._geometries)
         # did you pass an incorrect filename?
-        except OSError as e:
-            raise e
-        # it can't be a string path -- assume is a Collection or Geometry object
-        # and pass it on
-        except Exception:
+      except OSError as e:
+        raise e
+      # it can't be a string path -- assume is a Collection or Geometry object
+      # and pass it on
+      except Exception:
             pass
-        # is this a full Collection that we need to extract geometries from?
-        try:
-            self._geometries = [Shape(ft['geometry'])
-                for ft in self._geometries]
-            if self._schema['geometry'] == 'Polygon':
-                self._geometries = MultiPolygon(self._geometries)
-                self._schema['geometry'] = 'MultiPolygon'
-            elif self._schema['geometry'] == 'Point':
-                self._geometries = MultiPoint(self._geometries)
-                self._schema['geometry'] = 'MultiPoint'
-            elif self._schema['geometry'] == 'Line':
-                self._geometries = MultiLine(self._geometries)
-                self._schema['geometry'] = 'MultiLine'
-        # can't read()? assume this is a Geometry and pass it on
-        except Exception:
-            pass
+      # is this a full Collection that we need to extract geometries from?
+      try:
+        self._geometries = [Shape(ft['geometry'])
+          for ft in self._geometries]
+        if self._schema['geometry'] == 'Polygon':
+          self._geometries = MultiPolygon(self._geometries)
+          self._schema['geometry'] = 'MultiPolygon'
+        elif self._schema['geometry'] == 'Point':
+          self._geometries = MultiPoint(self._geometries)
+          self._schema['geometry'] = 'MultiPoint'
+        elif self._schema['geometry'] == 'Line':
+          self._geometries = MultiLine(self._geometries)
+          self._schema['geometry'] = 'MultiLine'
+      # can't read()? assume this is a Geometry and pass it on
+      except Exception:
+        pass
 
     @classmethod
     def buffer(vector, *args, **kwargs):
