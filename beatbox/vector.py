@@ -246,7 +246,7 @@ class Vector:
             _width = int(kwargs['width'])
         else:
             try:
-                _width = int(args[1])
+                _width = int(args[0])
             except Exception as e:
                 raise e
         # check and see if we are working in unit meters or degrees
