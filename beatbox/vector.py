@@ -21,14 +21,15 @@ _DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 
 class Vector:
     def __init__(self, *args, **kwargs):
-        """Handles file input/output operations for shapefiles\
-         using fiona and shapely built-ins and performs select\
-         spatial modifications on vector datasets
+        """Handles file input/output operations for shapefiles \
+        using fiona and shapely built-ins and performs select \
+        spatial modifications on vector datasets
 
         Keyword arguments:
-        filename -- the full path filename to a vector dataset (typically a .shp file)
+        filename= the full path filename to a vector dataset (typically a .shp file)
+
         Positional arguments:
-        1st -- if no keyword argument was used, attempt to .read the first pos argument
+        1st= if no filname keyword argument was used, attempt to read the first positional argument
         """
 
         self._geometries = []
@@ -48,13 +49,15 @@ class Vector:
                 pass
 
     def read(self, *args, **kwargs):
-        """Short-hand wrapper for fiona.open() that assigns class variables for\
+        """Short-hand wrapper for fiona.open() that assigns class variables for \
          CRS, geometry, and schema.
 
         Keyword arguments:
-        filename -- the full path filename to a vector dataset (typically a .shp file)
+        filename= the full path filename to a vector dataset (typically a .shp file)
+
         Positional arguments:
-        1st -- if no keyword argument was used, attempt to .read the first pos argument
+        1st = if no filename keyword argument is used, treat the first positional argument\
+        as the filename
         """
         if 'filename' in list(map(str.lower, kwargs.keys())):
             self._filename = kwargs['filename']
@@ -106,8 +109,13 @@ class Vector:
             raise e
 
     def copy(self):
-        """ simple copy method that creates a new instance of a vector class and assigns\
-        default attributes from the parent instance """
+        """ simple copy method that creates a new instance of a vector class and assigns \
+        default attributes from the parent instance
+
+        Keyword arguments: None
+
+        Positional arguments: None
+        """
         _vector_geom = Vector()
         _vector_geom._geometries = self._geometries
         _vector_geom._crs = self._crs
@@ -146,7 +154,13 @@ class Vector:
 
     @crs.setter
     def crs(self, *args):
-        """ decorated setter for our Coordinate Reference System """
+        """ decorated setter for our Coordinate Reference System
+
+        Keyword arguments: None
+
+        Positional arguments:
+        1st = first positional argument is used to assign our class CRS value
+        """
         try:
           self._crs = args[0]
         except Exception as e:
@@ -159,7 +173,13 @@ class Vector:
 
     @schema.setter
     def schema(self, *args):
-        """ decorated setter for our schema """
+        """ decorated setter for our schema
+
+        Keyword arguments: None
+
+        Positional arguments:
+        1st = first positional argument is used to assign our class schema value
+        """
         try:
             self._schema = args[0]
         except Exception:
@@ -206,8 +226,18 @@ class Vector:
         pass
 
     def buffer(self, *args, **kwargs):
-        """Buffer a shapely geometry collection by some user-specified
-        distance"""
+        """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
+        distance
+
+        Keyword arguments:
+        vector= a Vector object with spatial data
+        width= a width value to use for our buffering (in projected units of a given geometry \
+        -- typically meters or degrees)
+
+        Positional arguments:
+        1st= if no width keyword is provided, the first positional argument is treated as the \
+        width parameter
+        """
         if 'vector' in list(map(str.lower, kwargs.keys())):
             _vector_geom = kwargs[['vector']]
         else:
