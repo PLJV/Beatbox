@@ -11,9 +11,9 @@ __status__ = "Testing"
 """
 
 import fiona
+import geopandas
 
 from shapely.geometry import *
-from copy import copy
 
 _METERS_TO_DEGREES = 111000
 _DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
@@ -24,7 +24,7 @@ class Vector:
         """Handles file input/output operations for shapefiles\
          using fiona and shapely built-ins and performs select\
          spatial modifications on vector datasets
-        
+
         Keyword arguments:
         filename -- the full path filename to a vector dataset (typically a .shp file)
         Positional arguments:
@@ -50,7 +50,7 @@ class Vector:
     def read(self, *args, **kwargs):
         """Short-hand wrapper for fiona.open() that assigns class variables for\
          CRS, geometry, and schema.
-        
+
         Keyword arguments:
         filename -- the full path filename to a vector dataset (typically a .shp file)
         Positional arguments:
@@ -76,7 +76,7 @@ class Vector:
 
     def write(self, *args, **kwargs):
         """ wrapper for fiona.open that will write in-class geometry data to disk
-        
+
         (Optional) Keyword arguments:
         filename -- the full path filename to a vector dataset (typically a .shp file)
         (Optional) Positional arguments:
@@ -111,7 +111,7 @@ class Vector:
 
     def to_geopandas(self):
         """ return our spatial data as a geopandas dataframe """
-        pass
+        return geopandas.GeoDataFrame(self.crs, list(self.geometries))
 
     @property
     def filename(self):
@@ -120,7 +120,7 @@ class Vector:
 
     @filename.setter
     def filename(self, *args, **kwargs):
-        """ decoratted setter for our filename """ 
+        """ decoratted setter for our filename """
         if 'filename' in list(map(str.lower, kwargs.keys())):
             self._filename = kwargs['filename']
         else:
@@ -157,7 +157,7 @@ class Vector:
 
     @property
     def geometries(self):
-        """ decorated getter for our geometries """
+        """ decorated getter for our fiona geometries collection """
         return(self._geometries)
 
     @geometries.setter
@@ -221,7 +221,7 @@ class Vector:
 
         return (vector)
     @classmethod
-    def convex_hull(vector, *args, **kwargs): 
+    def convex_hull(vector, *args, **kwargs):
         """ Returns the convex hull of our focal Vector class """
         pass
     @classmethod
