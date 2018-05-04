@@ -105,6 +105,16 @@ class Vector:
         except Exception as e:
             raise e
 
+    def copy(self):
+        """ simple copy method that creates a new instance of a vector class and assigns\
+        default attributes from the parent instance """
+        _vector_geom = Vector()
+        _vector_geom._geometries = self._geometries
+        _vector_geom._crs = self._crs
+        _vector_geom._crs_wkt = self._crs_wkt
+        _vector_geom._schema = self._schema
+        return _vector_geom
+
     def to_collection(self):
         """ return a collection of our geometry data """
         return(self.geometries)
@@ -201,13 +211,7 @@ class Vector:
         if 'vector' in list(map(str.lower, kwargs.keys())):
             _vector_geom = kwargs[['vector']]
         else:
-            # spec out a new class to store our buffering results
-            _vector_geom = Vector()
-            # copy over what we have in this class for the operation
-            _vector_geom.geometries = self.geometries
-            _vector_geom.crs = self.crs
-            _vector_geom._crs_wkt = self._crs_wkt
-            _vector_geom.schema = self.schema
+            _vector_geom = self.copy()  # spec out a new class to store our buffering results
         if 'width' in list(map(str.lower, kwargs.keys())):
             _width = int(kwargs['width'])
         else:
