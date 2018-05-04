@@ -105,4 +105,4 @@ venv.bak/
 .mypy_cache/
 
 # Pycharm IDE crap
-.idea
+.idea/
