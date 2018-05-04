@@ -195,10 +195,19 @@ class Vector:
       except Exception:
         pass
 
-    @classmethod
-    def buffer(vector, *args, **kwargs):
+    def buffer(self, *args, **kwargs):
         """Buffer a shapely geometry collection by some user-specified
         distance"""
+        if 'vector' in list(map(str.lower, kwargs.keys())):
+            _vector_geom = kwargs[['vector']]
+        else:
+            # spec out a new class to store our buffering results
+            _vector_geom = Vector()
+            # copy over what we have in this class for the operation
+            _vector_geom.geometries = self.geometries
+            _vector_geom.crs = self.crs
+            _vector_geom._crs_wkt = self._crs_wkt
+            _vector_geom.schema = self.schema
         if 'width' in list(map(str.lower, kwargs.keys())):
             _width = int(kwargs['width'])
         else:
@@ -207,28 +216,31 @@ class Vector:
             except Exception as e:
                 raise e
         # check and see if we are working in unit meters or degrees
-        if vector._crs_wkt.find('Degree') > 0:
+        if _vector_geom._crs_wkt.find('Degree') > 0:
             _width = _DEGREES_TO_METERS * _width
         # build a schema for our buffering operations
-        target_schema = vector.schema
+        target_schema = _vector_geom.schema
         target_schema['geometry'] = 'MultiPolygon'
         # iterate our feature geometries and cast the output geometry as
         # a MultiPolygon geometry
-        vector.schema = target_schema
-        vector.geometries = MultiPolygon(
+        _vector_geom.schema = target_schema
+        _vector_geom.geometries = MultiPolygon(
             [shape(ft['geometry']).buffer(_width)
-             for ft in vector.geometries])
+             for ft in _vector_geom.geometries])
 
-        return (vector)
-    @classmethod
-    def convex_hull(vector, *args, **kwargs):
+        return (_vector_geom)
+
+    @staticmethod
+    def convex_hull(vector=None, *args, **kwargs):
         """ Returns the convex hull of our focal Vector class """
         pass
-    @classmethod
-    def intersection(vector, *args, **kwargs):
+
+    @staticmethod
+    def intersection(vector=None, *args, **kwargs):
         """ Returns the intersection of our focal Vector class with another Vector class """
         pass
-    @classmethod
-    def over(vector, *args, **kwargs):
+
+    @staticmethod
+    def over(vector=None, *args, **kwargs):
         """ Returns a boolean vector of overlapping features of our focal Vector class with another Vector class """
         pass
