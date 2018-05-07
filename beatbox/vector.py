@@ -129,7 +129,7 @@ class Vector:
 
     def to_geopandas(self):
         """ return our spatial data as a geopandas dataframe """
-        return geopandas.GeoDataFrame(self.crs, list(self.geometries))
+        return geopandas.read_file(self._filename)
 
     @property
     def filename(self):
