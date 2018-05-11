@@ -266,8 +266,39 @@ class Vector:
 
     @staticmethod
     def convex_hull(vector=None, *args, **kwargs):
-        """ Returns the convex hull of our focal Vector class """
-        pass
+        '''
+        accepts geopandas gdf as file
+        Buffers points, dissolves buffers, assigns unique ids,and...
+        Returns convex hull GeoDataFrame
+        '''
+
+        #Format for assigning buffers to geometry of a manipulable geodataframe
+        windbuff=windsubs
+        windbuff['geometry']=windbuff.geometry.buffer(1000,resolution=16)
+
+        #dissolve buffers by explode()
+        windbuff.loc[:,"group"] = 1
+        dissolved = windbuff.dissolve(by="group")
+        gs = dissolved.explode()
+        gdf2 = gs.reset_index().rename(columns={0: 'geometry'})
+        gdf_out = gdf2.merge(dissolved.drop('geometry', axis=1), left_on='level_0', right_index=True)
+        gdf_out = gdf_out.set_index(['level_0', 'level_1']).set_geometry('geometry')
+        gdf_out.crs = windbuff.crs
+        buff_diss = gdf_out.reset_index()
+
+        #assign unique windfarm ID field to each wind turbine and group them into multi-points based on that
+
+            # 'level_1' is the unique windfarm id in this case
+        windsubset_wID = gpd.sjoin(windsubset,buff_diss,how='inner',op='intersects')
+
+        #create convex hulls around the windturbines based on wind farm windsubset, dissolve--> convex hull
+        windsubset_farms = windsubset_wID.dissolve(by='level_1')
+        hulls = windsubset_farms.convex_hull
+        hulls_gdf = gpd.GeoDataFrame(gpd.GeoSeries(hulls))
+        hulls_gdf['geometry']=hulls_gdf[0]
+        hulls_gdf.crs = {'init': 'epsg:32614'}
+        del hulls_gdf[0] #Clean up that weird column in the hulls
+        return hulls_gdf
 
     @staticmethod
     def intersection(vector=None, *args, **kwargs):
