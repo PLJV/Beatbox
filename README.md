@@ -3,10 +3,10 @@ Simple, pythonic hooks for GeoRasters (GDAL) and the Orfeo Toolbox designed to o
 
 # Installation
 From a direct download:
-```bash python3 setup.py install```
+```python3 setup.py install```
 
 From pip:
-```bash pip3 install git+git://github.com/PLJV/Beatbox.git```
+```pip3 install git+git://github.com/PLJV/Beatbox.git```
 
 # Quickstart
 ## using ipython
