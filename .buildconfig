@@ -1,0 +1,10 @@
+[default]
+name=Default
+runtime=host
+config-opts=
+run-opts=
+prefix=/home/ktaylora/.cache/gnome-builder/install/Beatbox/host
+app-id=
+postbuild=
+prebuild=
+default=true
