@@ -39,117 +39,10 @@ class Vector:
         self._crs = []
         self._crs_wkt = []
 
-        if 'filename' in list(map(str.lower, kwargs.keys())):
-            self.read(kwargs['filename'])
-        else:
-            try:
-                self.read(args[0])
-            # user doesn't really have to initialize with a filename
-            # they can use our setter later
-            except Exception:
-                pass
-
-    def read(self, *args, **kwargs):
-        """Short-hand wrapper for fiona.open() that assigns class variables for \
-         CRS, geometry, and schema.
-
-        Keyword arguments:
-        filename= the full path filename to a vector dataset (typically a .shp file)
-
-        Positional arguments:
-        1st = if no filename keyword argument is used, treat the first positional argument\
-        as the filename
-        """
-        if 'filename' in list(map(str.lower, kwargs.keys())):
-            self._filename = kwargs['filename']
-        else:
-            try:
-                self._filename = args[0]
-            except Exception as e:
-                raise e
-
-        shape_collection = fiona.open(self._filename)
-
         try:
-            self._crs = shape_collection.crs
-            self._crs_wkt = shape_collection.crs_wkt
-            self._geometries = shape_collection
-            self._schema = shape_collection.schema
-        except Exception as e:
-            raise e
-
-    def write(self, *args, **kwargs):
-        """ wrapper for fiona.open that will write in-class geometry data to disk
-
-        (Optional) Keyword arguments:
-        filename -- the full path filename to a vector dataset (typically a .shp file)
-        (Optional) Positional arguments:
-        1st -- if no keyword argument was used, attempt to .read the first pos argument
-        """
-        if 'filename' in list(map(str.lower, kwargs.keys())):
-            self._filename = kwargs['filename']
-        else:
-            try:
-                self._filename = args[0]
-            except Exception as e:
-                pass # assume we previously defined a _filename to use for our write()
-        try:
-            # call fiona to write our geometry to disk
-            with fiona.open(
-                    self._filename,
-                    'w',
-                    'ESRI Shapefile',
-                    crs=self._crs,
-                    schema=self._schema) as shape:
-                # If there are multiple geometries, put the "for" loop here
-                shape.write({
-                    'geometry': mapping(self._geometries),
-                    'properties': {'id': 123},
-                })
-        except Exception as e:
-            raise e
-
-    def copy(self):
-        """ simple copy method that creates a new instance of a vector class and assigns \
-        default attributes from the parent instance
-
-        Keyword arguments: None
-
-        Positional arguments: None
-        """
-        _vector_geom = Vector()
-        _vector_geom._geometries = self._geometries
-        _vector_geom._crs = self._crs
-        _vector_geom._crs_wkt = self._crs_wkt
-        _vector_geom._schema = self._schema
-        return _vector_geom
-
-    def to_collection(self):
-        """ return a collection of our geometry data """
-        return(self.geometries)
-
-    def to_geopandas(self):
-        """ return our spatial data as a geopandas dataframe """
-        return geopandas.read_file(self._filename)
-
-    def to_geojson(self, *args, **kwargs):
-        _as_string = kwargs.get('as_string', args[0]) if kwargs.get('as_string', args[0]) else False
-        _sr = self._geometries.GetSpatialRef().ExportToProj4()
-        feature_collection = {
-            "type": "FeatureCollection",
-            "features": []
-        }
-
-        for feature in self._geometries:
-            feature_collection["features"].append(json.loads(feature.ExportToJson()))
-
-        if _sr:
-            feature_collection['crs'].append(_sr)
-
-        if(_as_string):
-            feature_collection = json.dumps(feature_collection)
-
-        return feature_collection
+            self.read(kwargs.get('filename', args[0]))
+        except Exception:
+            pass
 
     @property
     def filename(self):
@@ -157,15 +50,12 @@ class Vector:
         return self._filename
 
     @filename.setter
-    def filename(self, *args, **kwargs):
+    def filename(self, *args):
         """ decoratted setter for our filename """
-        if 'filename' in list(map(str.lower, kwargs.keys())):
-            self._filename = kwargs['filename']
-        else:
-            try:
-                self._filename = args[0]
-            except Exception as e:
-                raise e
+        try:
+            self._filename = args[0]
+        except Exception as e:
+            raise e
 
     @property
     def crs(self):
@@ -244,6 +134,103 @@ class Vector:
       # can't read()? assume this is a Geometry and pass it on
       except Exception:
         pass
+
+    def read(self, *args, **kwargs):
+        """Short-hand wrapper for fiona.open() that assigns class variables for \
+         CRS, geometry, and schema.
+
+        Keyword arguments:
+        filename= the full path filename to a vector dataset (typically a .shp file)
+
+        Positional arguments:
+        1st = if no filename keyword argument is used, treat the first positional argument\
+        as the filename
+        """
+        try:
+            self.filename = kwargs.get('filename', args[0]) if kwargs.get('filename', args[0]) else ''
+        except Exception as e:
+            raise e
+
+        shape_collection = fiona.open(self.filename)
+
+        try:
+            self.crs = shape_collection.crs
+            self._crs_wkt = shape_collection.crs_wkt
+            self.geometries = shape_collection
+            self.schema = shape_collection.schema
+        except Exception as e:
+            raise e
+
+    def write(self, *args, **kwargs):
+        """ wrapper for fiona.open that will write in-class geometry data to disk
+
+        (Optional) Keyword arguments:
+        filename -- the full path filename to a vector dataset (typically a .shp file)
+        (Optional) Positional arguments:
+        1st -- if no keyword argument was used, attempt to .read the first pos argument
+        """
+        try:
+            self._filename = kwargs.get('filename', args[0]) if kwargs.get('filename', args[0]) else ''
+        except Exception:
+            pass # assume we previously defined a _filename to use for our write()
+
+        try:
+            # call fiona to write our geometry to disk
+            with fiona.open(
+                    self._filename,
+                    'w',
+                    'ESRI Shapefile',
+                    crs=self._crs,
+                    schema=self._schema) as shape:
+                # If there are multiple geometries, put the "for" loop here
+                shape.write({
+                    'geometry': mapping(self._geometries),
+                    'properties': {'id': 123},
+                })
+        except Exception as e:
+            raise e
+
+    def copy(self):
+        """ simple copy method that creates a new instance of a vector class and assigns \
+        default attributes from the parent instance
+
+        Keyword arguments: None
+
+        Positional arguments: None
+        """
+        _vector_geom = Vector()
+        _vector_geom._geometries = self._geometries
+        _vector_geom._crs = self._crs
+        _vector_geom._crs_wkt = self._crs_wkt
+        _vector_geom._schema = self._schema
+        return _vector_geom
+
+    def to_collection(self):
+        """ return a collection of our geometry data """
+        return(self.geometries)
+
+    def to_geopandas(self):
+        """ return our spatial data as a geopandas dataframe """
+        return geopandas.read_file(self._filename)
+
+    def to_geojson(self, *args, **kwargs):
+        _as_string = kwargs.get('as_string', args[0]) if kwargs.get('as_string', args[0]) else False
+        _sr = self._geometries.GetSpatialRef().ExportToProj4()
+        feature_collection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+
+        for feature in self._geometries:
+            feature_collection["features"].append(json.loads(feature.ExportToJson()))
+
+        if _sr:
+            feature_collection['crs'].append(_sr)
+
+        if(_as_string):
+            feature_collection = json.dumps(feature_collection)
+
+        return feature_collection
 
     def buffer(self, *args, **kwargs):
         """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
