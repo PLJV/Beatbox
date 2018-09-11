@@ -51,7 +51,7 @@ class Vector:
 
     @filename.setter
     def filename(self, *args):
-        """ decoratted setter for our filename """
+        """ decorated setter for our filename """
         try:
             self._filename = args[0]
         except Exception as e:
@@ -60,7 +60,7 @@ class Vector:
     @property
     def crs(self):
         """ decorated getter for our Coordinate Reference System """
-        return(self._crs)
+        return self._crs
 
     @crs.setter
     def crs(self, *args):
@@ -147,17 +147,17 @@ class Vector:
         as the filename
         """
         try:
-            self.filename = kwargs.get('filename', args[0]) if kwargs.get('filename', args[0]) else ''
+            self._filename = kwargs.get('filename', args[0]) if kwargs.get('filename', args[0]) else self._filename
         except Exception as e:
             raise e
 
-        shape_collection = fiona.open(self.filename)
+        shape_collection = fiona.open(self._filename)
 
         try:
-            self.crs = shape_collection.crs
+            self._crs = shape_collection.crs
             self._crs_wkt = shape_collection.crs_wkt
-            self.geometries = shape_collection
-            self.schema = shape_collection.schema
+            self._geometries = shape_collection
+            self._schema = shape_collection.schema
         except Exception as e:
             raise e
 
