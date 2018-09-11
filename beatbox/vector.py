@@ -12,6 +12,7 @@ __status__ = "Testing"
 
 import fiona
 import geopandas
+import json
 
 from shapely.geometry import *
 
@@ -130,6 +131,19 @@ class Vector:
     def to_geopandas(self):
         """ return our spatial data as a geopandas dataframe """
         return geopandas.read_file(self._filename)
+
+    def to_geojson(self, *args, **kwargs):
+        _as_string = kwargs.get('as_string', args[0]) if kwargs.get('as_string', args[0]) else False
+        _sr = self._geometries.GetSpatialRef().ExportToProj4()
+        feature_collection = {
+            "type": "FeatureCollection",
+            "features": []
+        }
+        for feature in self._geometries:
+            feature_collection["features"].append(json.loads(feature.ExportToJson()))
+        if(_as_string):
+            feature_collection = json.dumps(feature_collection)
+        return feature_collection
 
     @property
     def filename(self):

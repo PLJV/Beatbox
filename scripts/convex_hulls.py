@@ -15,9 +15,8 @@ from beatbox import Vector
 _DEFAULT_BUFFER_WIDTH = 1000 # default width (in meters) of a geometry for various buffer operations
 
 def fuzzy_convex_hulls(*args, **kwargs):
-    """accepts geopandas gdf as SpatialPoints, buffers the point geometries by some distance,
-    and than builds a convex hull feature collection from clusters of points within a buffer
-    distance
+    """accepts geopandas datatframe as SpatialPoints, buffers the point geometries by some distance,
+    and than builds a convex hull feature collection from clusters of points
     """
     _point_buffers = kwargs.get('points', args[0])
     _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is None) else _DEFAULT_BUFFER_WIDTH
