@@ -6,7 +6,10 @@ From a direct download:
 ```python3 setup.py install```
 
 From pip:
-```pip3 install git+git://github.com/PLJV/Beatbox.git```
+```bash
+pip uninstall Beatbox
+pip install git+git://github.com/PLJV/Beatbox.git
+```
 
 # Quickstart
 ## using ipython
