@@ -242,6 +242,8 @@ class Vector:
 
         return feature_collection
 
+
+
     def buffer(self, *args, **kwargs):
         """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
         distance

@@ -11,24 +11,48 @@ __status__ = "Testing"
 """
 
 import geopandas as gp
+from scipy.sparse.csgraph import connected_components
 
 from beatbox import Vector
 
 _DEFAULT_BUFFER_WIDTH = 1000 # default width (in meters) of a geometry for various buffer operations
+
+def _dissolve_by_explode(buffers):
+    # assign an arbitrary group to all of our
+    # input polygons and dissolve
+    buffers.loc[:, "group"] = 1
+    dissolved_buffers = buffers.dissolve(by="group")
+    # now explode the dissolve from a multipart geometry into
+    # individual Polygons
+    dissolved_buffers = dissolved_buffers.\
+        explode().\
+        reset_index().rename(columns={0: 'geometry'})
+    # merge attributes
+    gdf_out = dissolved_buffers.merge(buffers.drop('geometry', axis=1), left_on='level_0', right_index=True)
+    gdf_out = gdf_out.set_index(['level_0', 'level_1']).set_geometry('geometry')
+    gdf_out.crs = buffers.crs
+    gdf_out = gdf_out.reset_index()
+    return gdf_out
+
+def _attribute_by_overlap(buffers, points):
+    # dissolve-by explode
+    gdf_out = _dissolve_by_explode(buffers)
+    # return the right-sided spatial join
+    return gp.\
+        sjoin(points, gdf_out, how='inner', op='intersects').\
+        dissolve(by='level_1')
+
 
 def fuzzy_convex_hulls(*args, **kwargs):
     """accepts geopandas datatframe as SpatialPoints, buffers the point geometries by some distance,
     and than builds a convex hull feature collection from clusters of points
     """
     _points = kwargs.get('points', args[0])
-    _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is None) else _DEFAULT_BUFFER_WIDTH
+    _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is not None) else _DEFAULT_BUFFER_WIDTH
     # generate circular point buffers around our SpatialPoints features
     try:
         _point_buffers = _points
-        _point_buffers['geometry'] = _points.geometry.buffer(
-            _width,
-            resolution=16
-        )
+        _point_buffers['geometry'] = _points.geometry.buffer(_width)
     # assume AttributeErrors are due to args[0] not being a GeoPandas object
     except AttributeError as e:
         # if this is a string, assume that it is a path
@@ -36,10 +60,7 @@ def fuzzy_convex_hulls(*args, **kwargs):
         if isinstance(_points, str):
             _points = Vector(_points).to_geopandas()
             _point_buffers = _points
-            _point_buffers['geometry'] = _point_buffers.geometry.buffer(
-                _width,
-                resolution=16
-            )
+            _point_buffers = _point_buffers.geometry.buffer(_width)
         else:
             raise e
     except Exception as e:
@@ -47,7 +68,8 @@ def fuzzy_convex_hulls(*args, **kwargs):
     # dissolve our buffered geometries
     #_point_buffers.loc[:,"group"] = 1
     # unary union of overlapping buffer geometries
-    clusters = gp.overlay(_point_buffers, _point_buffers, how='intersection').unary_union
+    point_clusters = _attribute_by_overlap(_point_buffers, _points)
+
     # build a GeoDataFrame from our dissolved buffers
     gdf = clusters.merge(
         _point_buffers.drop('geometry', axis=1),
@@ -73,30 +95,5 @@ def fuzzy_convex_hulls(*args, **kwargs):
     hulls_gdf.crs = {'init': 'epsg:32614'}
     del hulls_gdf[0] #Clean up that weird column in the hulls
     return hulls_gdf
-
-def affected_playas(hulls_lyr=None,playa_lyr=None):
-
-    '''
-    accepts geopandas geodataframe (hulls_lyr) and a .shp (playa_lyr) as inputs
-    returns GeoDataFrame of playas with field 'knock_date' updated to date of wind dataset
-    release, if playa had not been previously affected. Also writes _copy of original layer
-    '''
-
-    playas = gpd.read_file(playa_lyr)
-    playas = playas.to_crs({'init': 'epsg:32614'})
-
-    #Find playas that intersect with 'hulls_gdf' and update a date column with the dataset's release IF affected
-    playas['knock_date']='null' #add knock_date field, populate w 'null'
-    polygons = hulls_lyr.geometry
-    polygons = hulls_lyr.loc[hulls['geometry'].geom_type=='Polygon'] #this works officially to trim lines and points
-    sj_playas = gpd.sjoin(playas,polygons,how='inner',op='intersects')
-    aff_playas = playas.geom_almost_equals(sj_playas)
-    aff_playas = aff_playas[~aff_playas.index.duplicated()]
-    playas['knock_date'][aff_playas]=playa_lyr[-11:-4] #way to selet only affected playas. seems to work.
-
-    #import
-
-    playas.to_file(playa_lyr[0:-4]+'_copy.shp'))
-    return playas
 
 if __name__ == "__main__":
