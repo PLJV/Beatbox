@@ -41,8 +41,8 @@ class Vector:
 
         try:
             self.read(kwargs.get('filename', args[0]))
-        except Exception:
-            pass
+        except Exception as e:
+            raise e
 
     @property
     def filename(self):
@@ -214,18 +214,28 @@ class Vector:
         return geopandas.read_file(self._filename)
 
     def to_geojson(self, *args, **kwargs):
-        _as_string = kwargs.get('as_string', args[0]) if kwargs.get('as_string', args[0]) else False
-        _sr = self._geometries.GetSpatialRef().ExportToProj4()
+        _as_string = False
+        try:
+            _as_string = True if kwargs.get("stringify", args) else False
+        except IndexError:
+            _as_string = False
+        except Exception as e:
+            raise e
+
         feature_collection = {
             "type": "FeatureCollection",
-            "features": []
+            "features": [],
+            "crs": []
         }
 
         for feature in self._geometries:
-            feature_collection["features"].append(json.loads(feature.ExportToJson()))
+            if isinstance(feature, dict):
+              feature_collection["features"].append(json.loads(json.dumps(feature)))
+            else:
+              feature_collection["features"].append(json.loads(feature))
 
-        if _sr:
-            feature_collection['crs'].append(_sr)
+        if self._crs:
+            feature_collection["crs"].append(self._crs)
 
         if(_as_string):
             feature_collection = json.dumps(feature_collection)
