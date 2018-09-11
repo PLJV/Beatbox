@@ -139,10 +139,16 @@ class Vector:
             "type": "FeatureCollection",
             "features": []
         }
+
         for feature in self._geometries:
             feature_collection["features"].append(json.loads(feature.ExportToJson()))
+
+        if _sr:
+            feature_collection['crs'].append(_sr)
+
         if(_as_string):
             feature_collection = json.dumps(feature_collection)
+
         return feature_collection
 
     @property

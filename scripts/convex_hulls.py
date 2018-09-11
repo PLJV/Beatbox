@@ -10,6 +10,8 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
 
+import geopandas as gp
+
 from beatbox import Vector
 
 _DEFAULT_BUFFER_WIDTH = 1000 # default width (in meters) of a geometry for various buffer operations
@@ -18,11 +20,12 @@ def fuzzy_convex_hulls(*args, **kwargs):
     """accepts geopandas datatframe as SpatialPoints, buffers the point geometries by some distance,
     and than builds a convex hull feature collection from clusters of points
     """
-    _point_buffers = kwargs.get('points', args[0])
+    _points = kwargs.get('points', args[0])
     _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is None) else _DEFAULT_BUFFER_WIDTH
     # generate circular point buffers around our SpatialPoints features
     try:
-        _point_buffers['geometry'] = _point_buffers.geometry.buffer(
+        _point_buffers = _points
+        _point_buffers['geometry'] = _points.geometry.buffer(
             _width,
             resolution=16
         )
@@ -30,8 +33,9 @@ def fuzzy_convex_hulls(*args, **kwargs):
     except AttributeError as e:
         # if this is a string, assume that it is a path
         # and try and open it -- otherwise raise an error
-        if isinstance(_point_buffers, str):
-            _point_buffers = Vector(_point_buffers).to_geopandas()
+        if isinstance(_points, str):
+            _points = Vector(_points).to_geopandas()
+            _point_buffers = _points
             _point_buffers['geometry'] = _point_buffers.geometry.buffer(
                 _width,
                 resolution=16
@@ -41,14 +45,12 @@ def fuzzy_convex_hulls(*args, **kwargs):
     except Exception as e:
         raise e
     # dissolve our buffered geometries
-    _point_buffers.loc[:,"group"] = 1
-    gs = _point_buffers.dissolve(by="group").explode()
+    #_point_buffers.loc[:,"group"] = 1
+    # unary union of overlapping buffer geometries
+    clusters = gp.overlay(_point_buffers, _point_buffers, how='intersection').unary_union
     # build a GeoDataFrame from our dissolved buffers
-    gdf = gs.reset_index().rename(
-        columns={0: 'geometry'}
-    )
-    gdf = gdf.merge(
-        gs.drop('geometry', axis=1),
+    gdf = clusters.merge(
+        _point_buffers.drop('geometry', axis=1),
         left_on='level_0',
         right_index=True
     )
@@ -57,9 +59,9 @@ def fuzzy_convex_hulls(*args, **kwargs):
     gdf.crs = _point_buffers.crs
     gdf = gdf.reset_index()
     # assign unique windfarm ID field to each wind turbine and group them into multi-points
-    windsubset_wID = gdf.sjoin(
-        _point_buffers,
-        gs,
+    windsubset_wID = gp.sjoin(
+        _points,
+        gdf,
         how='inner',
         op='intersects'
     )
