@@ -66,17 +66,16 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
                        "which may lead to artifacts at boundaries", split)
         split = round(_buffers.size / _ARRAY_MAX) + 1
         chunks = list(_chunks(_buffers, split))
-        array_dims = len(chunks)*chunks[0].size
         chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d]
         overlap_matrix = np.concatenate(chunks)
-        overlap_matrix.shape = (array_dims, array_dims)
+        overlap_matrix.shape = (len(_buffers), len(_buffers))
     else:
         overlap_matrix = np.concatenate(
             [_buffers.geometry.overlaps(x).values.astype(int) for x in _buffers]
         )
         overlap_matrix.shape = (len(_buffers), len(_buffers))
-        n, ids = connected_components(overlap_matrix)
     # merge attributes
+    n, ids = connected_components(overlap_matrix)
     dissolved_buffers = gp.GeoDataFrame({
         'geometry': _buffers.geometry,
         'group': ids
