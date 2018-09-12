@@ -13,9 +13,9 @@ __status__ = "Testing"
 import fiona
 import geopandas as gp
 import json
-import copy
 import ee
 
+from copy import copy
 from shapely.geometry import *
 
 _METERS_TO_DEGREES: int = 111000
@@ -35,6 +35,7 @@ class Vector:
         """
 
         self._geometries = []
+        self._attributes = {}
         self._filename = []
         self._schema = []
         self._crs = []
@@ -200,6 +201,7 @@ class Vector:
         """
         _vector_geom = Vector()
         _vector_geom._geometries = self._geometries
+        _vector_geom._attributes = self._attributes
         _vector_geom._crs = self._crs
         _vector_geom._crs_wkt = self._crs_wkt
         _vector_geom._schema = self._schema
@@ -215,11 +217,17 @@ class Vector:
         """ return a collection of our geometry data """
         return self.geometries
 
-    def to_geopandas(self):
+    def to_geodataframe(self):
         """ return our spatial data as a geopandas dataframe """
-        _gdf = gp.read_file(self._filename)
+        try:
+            _gdf = gp.GeoDataFrame({
+                "geometry": gp.GeoSeries(self._geometries),
+                "crs": self._crs
+            })
+        except Exception as e:
+            _gdf = gp.read_file(self._filename)
         # make sure we note our units, because GeoPandas doesn't by default
-        _gdf.crs["units"] = ["degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"]
+        _gdf.crs["units"] = "degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"
         return _gdf
 
     def to_ee_feature_collection(self):
@@ -284,13 +292,7 @@ def buffer(*args, **kwargs):
     """
     _vector_geom = kwargs.get('vector', args[0]) if kwargs.get('vector', args[0]) is not None else None
     _vector_geom = copy(_vector_geom)  # spec out a new class to store our buffering results
-    if 'width' in list(map(str.lower, kwargs.keys())):
-        _width = int(kwargs['width'])
-    else:
-        try:
-            _width = int(args[0])
-        except Exception as e:
-            raise e
+    _width = kwargs.get('width', args[1]) if kwargs.get('width', args[1]) is not None else None
     # check and see if we are working in unit meters or degrees
     if _vector_geom._crs_wkt.find('Degree') > 0:
         _width = _DEGREES_TO_METERS * _width
@@ -303,5 +305,4 @@ def buffer(*args, **kwargs):
     _vector_geom.geometries = MultiPolygon(
         [shape(ft['geometry']).buffer(_width)
          for ft in _vector_geom.geometries])
-
-    return (_vector_geom)
+    return _vector_geom
