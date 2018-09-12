@@ -22,6 +22,3 @@ from beatbox import Vector, Raster
 some_vector_data = Vector("/path/to/shapefile.shp")
 some_raster_data = Raster("/path/to/raster.tif")
 ```
-
-# Attribution
-This work was born out of work related to the [QGIS/LecoS project](http://conservationecology.wordpress.com/lecos-land-cover-statistics/ "LecoS"). If you are looking for a good, open-source GUI for calculating landscape metrics, we recommend it. 
