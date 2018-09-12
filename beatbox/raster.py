@@ -7,9 +7,9 @@ import georasters
 import gdalnumeric
 import gdal
 import psutil
+import copy
 
 from tempfile import mkdtemp
-
 
 class Raster:
     """Raster class is a wrapper meant to extend the functionality of the GeoRaster class
@@ -75,7 +75,11 @@ class NassCdlRaster(Raster):
         pass
 
 
-def binary_reclass(*args, **kwargs):
+def reclassify(*args, **kwargs):
+    pass
+
+
+def binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
     self.array are reclassified as uint8(boolean) based on whether they
     match or do not match the values of an input match array.
@@ -107,6 +111,14 @@ def clip(*args, **kwargs):
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
     return crop(raster=_raster, shape=_shape)
+
+
+def extract(*args, **kwargs):
+    pass
+
+
+def reproject(*args, **kwargs):
+    pass
 
 
 def merge(*args, **kwargs):
