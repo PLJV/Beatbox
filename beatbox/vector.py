@@ -11,8 +11,9 @@ __status__ = "Testing"
 """
 
 import fiona
-import geopandas
+import geopandas as gp
 import json
+import ee
 
 from shapely.geometry import *
 
@@ -203,6 +204,8 @@ class Vector:
         _vector_geom._crs = self._crs
         _vector_geom._crs_wkt = self._crs_wkt
         _vector_geom._schema = self._schema
+        _vector_geom._filename = self._filename
+
         return _vector_geom
 
     def to_collection(self):
@@ -211,7 +214,10 @@ class Vector:
 
     def to_geopandas(self):
         """ return our spatial data as a geopandas dataframe """
-        return geopandas.read_file(self._filename)
+        return gp.read_file(self._filename)
+
+    def to_ee_feature_collection(self):
+        return ee.FeatureCollection(self.to_geojson(stringify=True))
 
     def to_geojson(self, *args, **kwargs):
         _as_string = False
@@ -230,9 +236,14 @@ class Vector:
 
         for feature in self._geometries:
             if isinstance(feature, dict):
-              feature_collection["features"].append(json.loads(json.dumps(feature)))
+                feature_collection["features"].append(feature)
             else:
-              feature_collection["features"].append(json.loads(feature))
+                # assume that json will know what to do with it
+                # and raise an error if it doesn't
+                try:
+                    feature_collection["features"].append(json.loads(feature))
+                except Exception as e:
+                    raise e
 
         if self._crs:
             feature_collection["crs"].append(self._crs)
@@ -284,40 +295,30 @@ class Vector:
         return (_vector_geom)
 
     @staticmethod
-    def convex_hull(vector=None, *args, **kwargs):
+    def convex_hull(*args, **kwargs):
         '''
         accepts geopandas gdf as file
-        Buffers points, dissolves buffers, assigns unique ids,and...
         Returns convex hull GeoDataFrame
         '''
+        # try and handle our lone 'points' argument
+        try:
+            _points = kwargs.get('points', args[0])
+            if isinstance(_points, gp.GeoDataFrame):
+                pass
+            elif isinstance(_points, Vector):
+                _points = _points.to_geopandas()
+            else:
+                raise AttributeError(
+                    "points= input is invalid. try passing a GeoDataFrame or Vector object."
+                )
+        except AttributeError:
+            raise AttributeError(
+                "points= input is invalid. try passing a GeoDataFrame or Vector object."
+            )
+        except Exception as e:
+            raise e
 
-        #Format for assigning buffers to geometry of a manipulable geodataframe
-        windbuff=windsubs
-        windbuff['geometry']=windbuff.geometry.buffer(1000,resolution=16)
-
-        #dissolve buffers by explode()
-        windbuff.loc[:,"group"] = 1
-        dissolved = windbuff.dissolve(by="group")
-        gs = dissolved.explode()
-        gdf2 = gs.reset_index().rename(columns={0: 'geometry'})
-        gdf_out = gdf2.merge(dissolved.drop('geometry', axis=1), left_on='level_0', right_index=True)
-        gdf_out = gdf_out.set_index(['level_0', 'level_1']).set_geometry('geometry')
-        gdf_out.crs = windbuff.crs
-        buff_diss = gdf_out.reset_index()
-
-        #assign unique windfarm ID field to each wind turbine and group them into multi-points based on that
-
-            # 'level_1' is the unique windfarm id in this case
-        windsubset_wID = gpd.sjoin(windsubset,buff_diss,how='inner',op='intersects')
-
-        #create convex hulls around the windturbines based on wind farm windsubset, dissolve--> convex hull
-        windsubset_farms = windsubset_wID.dissolve(by='level_1')
-        hulls = windsubset_farms.convex_hull
-        hulls_gdf = gpd.GeoDataFrame(gpd.GeoSeries(hulls))
-        hulls_gdf['geometry']=hulls_gdf[0]
-        hulls_gdf.crs = {'init': 'epsg:32614'}
-        del hulls_gdf[0] #Clean up that weird column in the hulls
-        return hulls_gdf
+        return _points.convex_hull()
 
     @staticmethod
     def intersection(vector=None, *args, **kwargs):

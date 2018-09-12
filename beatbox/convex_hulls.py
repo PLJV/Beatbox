@@ -11,11 +11,11 @@ __status__ = "Testing"
 """
 
 import geopandas as gp
+from beatbox import Vector
 from scipy.sparse.csgraph import connected_components
 
-from beatbox import Vector
-
 _DEFAULT_BUFFER_WIDTH = 1000 # default width (in meters) of a geometry for various buffer operations
+
 
 def _dissolve_overlapping_geometries(buffers):
     # force casting as a GeoDataFrame
@@ -30,8 +30,8 @@ def _dissolve_overlapping_geometries(buffers):
         raise e
     # determine appropriate groupings for our overlapping buffers
     # 1.) using an old-ass lambda function
-    overlap_matrix = buffers.geometry.apply(lambda x: buffers.geometry.overlaps(x)).values.astype(int)
-    n, ids = connected_components(overlap_matrix)
+    #overlap_matrix = buffers.geometry.apply(lambda x: buffers.geometry.overlaps(x)).values.astype(int)
+    #n, ids = connected_components(overlap_matrix)
     # 2.) using newer listcomp hotness
     n, ids = connected_components(
         [ buffers.geometry.overlaps(x).values.astype(int) for x in buffers.geometry ]
@@ -41,12 +41,11 @@ def _dissolve_overlapping_geometries(buffers):
         'geometry': buffers.geometry,
         'group': ids
     })
-    # call geopandas dissolve with our 'ids' column and return
-    # to user
+    # call geopandas dissolve with our 'ids' column and
     dissolved_buffers = dissolved_buffers.dissolve(by='group')
     dissolved_buffers.crs = buffers.crs
-
     return dissolved_buffers
+
 
 def _attribute_by_overlap(buffers, points):
     # dissolve-by explode
@@ -80,8 +79,6 @@ def fuzzy_convex_hulls(*args, **kwargs):
     except Exception as e:
         raise e
     # dissolve our buffered geometries
-    #_point_buffers.loc[:,"group"] = 1
-    # unary union of overlapping buffer geometries
     point_clusters = _attribute_by_overlap(_point_buffers, _points)
 
     # build a GeoDataFrame from our dissolved buffers
@@ -110,4 +107,6 @@ def fuzzy_convex_hulls(*args, **kwargs):
     del hulls_gdf[0] #Clean up that weird column in the hulls
     return hulls_gdf
 
+
 if __name__ == "__main__":
+    pass
