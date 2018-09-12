@@ -48,54 +48,16 @@ class Raster:
         pass
 
     def to_georaster(self):
-        return(georasters.GeoRaster(self.array,
-                             self.geot,
-                             nodata_value=self.ndv,
-                             projection=self.projection,
-                             datatype=self.array.dtype))
+        return(georasters.GeoRaster(
+            self.array,
+            self.geot,
+            nodata_value=self.ndv,
+            projection=self.projection,
+            datatype=self.array.dtype
+        ))
 
-    def binary_reclass(self, match=None, filter=None, invert=False):
-        """ binary reclassification of input data. All cell values in
-        self.array are reclassified as uint8(boolean) based on whether they
-        match or do not match the values of an input match array.
-        """
-        return numpy.reshape(numpy.array(numpy.in1d(self.array, match,
-            assume_unique=True, invert=invert), dtype='uint8'),
-            self.array.shape)
-
-    def crop(self, shape=None):
-        """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
-        try:
-            gr = self.to_georaster()
-            self.array = gr.clip(shape)
-
-        except Exception as e:
-            raise e
-
-    def clip(self, *args, **kwargs):
-        """clip is a hold-over from gr that performs a crop operation"""
-        if 'shape' in list(map(str.lower, kwargs.keys())):
-            self.crop(shape=kwargs['shape'])
-        else:
-            self.crop(args[0])
-
-    def merge(self, array=None, **kwargs):
-        """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
-        try:
-            array = [georasters.GeoRaster(i, self.geot,
-                                          nodata_value=self.ndv,
-                                          projection=self.projection,
-                                          datatype=self.array.dtype)
-                     for i in array]
-            self.array = georasters.merge(array)
-        except Exception as e:
-            raise e
-
-
-    def split(self, n=None, **kwargs):
-        """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
-        possibly for a future parallel operation."""
-        return numpy.array_split(numpy.array(self.array,dtype=str(self.array.data.dtype)), n)
+    def to_ee_image(self):
+        pass
 
 
 class NassCdlRaster(Raster):
@@ -161,14 +123,62 @@ def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
 
     return (dim * numpy.nbytes[dtype] * asGigabytes) ** nOperations
 
-def ram_sanity_check(r, dtype=None, nOperation=None, asGigabytes=True):
-    """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
-    between your available ram and your proposed operation(s). Negatives are bad. """
+
+def binary_reclass(array=None, match=None, filter=None, invert=False):
+    """ binary reclassification of input data. All cell values in
+    self.array are reclassified as uint8(boolean) based on whether they
+    match or do not match the values of an input match array.
+    """
+    return numpy.reshape(numpy.array(numpy.in1d(array, match,
+        assume_unique=True, invert=invert), dtype='uint8'),
+        self.array.shape)
+
+
+def crop(raster=None, *args, **kwargs):
+    """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
+    _shape = kwargs.get('shape', args[0]) if kwargs.get('shape', args[0]) is not None else None
     try:
-        dtype = r.array.dtype
-    except AttributeError:
-        dtype = dtype
+        return raster.to_georaster().gr.clip(_shape)
     except Exception as e:
         raise e
-    return _get_free_ram(asGigabytes=asGigabytes) - \
-           _est_ram_usage(r.array.shape, dtype=dtype, nOperations=nOperation, asGigabytes=asGigabytes)
+
+
+def clip(raster=None, *args, **kwargs):
+    """clip is a hold-over from gr that performs a crop operation"""
+    _shape = kwargs.get('shape', args[0]) if kwargs.get('shape', args[0]) is not None else None
+    return crop(raster=raster, shape=_shape)
+
+
+def merge(rasters=None, *args, **kwargs):
+    """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
+    try:
+        return georasters.merge(rasters)
+    except Exception as e:
+        raise e
+
+
+def split(*args, **kwargs):
+    """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
+    possibly for a future parallel operation."""
+    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
+    _n = kwargs.get('n', args[1]) if kwargs.get('n', args[1]) is not None else None
+    return numpy.array_split(
+        numpy.array(_raster.array,dtype=str(_raster.array.data.dtype)),
+        _n
+    )
+
+
+def ram_sanity_check(*args, **kwargs):
+    """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
+    between your available ram and your proposed operation(s). Negatives are bad. """
+    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
+    _dtype = kwargs.get('dtype', args[1]) if kwargs.get('dtype', args[1]) is not None else None
+    _nOperation = kwargs.get('nOperation', args[2]) if kwargs.get('nOperation', args[2]) is not None else None
+    _asGigabytes = kwargs.get('asGigabytes', args[3]) if kwargs.get('asGigabytes', args[3]) is not None else True
+    try:
+        if _dtype is None:
+            _dtype = _raster.array.dtype
+    except Exception as e:
+        raise e
+    return _get_free_ram(asGigabytes=_asGigabytes) - \
+           _est_ram_usage(_raster.array.shape, dtype=_dtype, nOperations=_nOperation, asGigabytes=_asGigabytes)
