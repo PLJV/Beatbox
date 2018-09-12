@@ -11,7 +11,7 @@ From a direct download:
 
 From conda / pip:
 ```bash
-conda install gdal numpy fiona shapely seaborn geopandas geoplot
+conda install gdal numpy fiona shapely seaborn geopandas geoplot pyCrypto
 pip install google-api-python-client
 pip install earthengine-api
 pip uninstall Beatbox
