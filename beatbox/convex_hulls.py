@@ -10,17 +10,21 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
 
+from copy import copy
 import geopandas as gp
 from beatbox import Vector
 from scipy.sparse.csgraph import connected_components
 
-_DEFAULT_BUFFER_WIDTH = 1000 # default width (in meters) of a geometry for various buffer operations
-
+_DEFAULT_BUFFER_WIDTH: int = 1000  # default width (in meters) of a geometry for various buffer operations
+_METERS_TO_DEGREES: float = 111000
+_DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
 
 def _dissolve_overlapping_geometries(buffers):
     # force casting as a GeoDataFrame
     try:
-        buffers = gp.GeoDataFrame(geometry=buffers)
+        buffers = gp.GeoDataFrame({
+            'geometry': buffers
+        })
     except ValueError as e:
         if isinstance(buffers, gp.GeoDataFrame):
             pass
@@ -34,7 +38,7 @@ def _dissolve_overlapping_geometries(buffers):
     #n, ids = connected_components(overlap_matrix)
     # 2.) using newer listcomp hotness
     n, ids = connected_components(
-        [ buffers.geometry.overlaps(x).values.astype(int) for x in buffers.geometry ]
+        [buffers.geometry.overlaps(x).values.astype(int) for x in buffers.geometry]
     )
     # merge attributes
     dissolved_buffers = gp.GeoDataFrame({
@@ -55,25 +59,55 @@ def _attribute_by_overlap(buffers, points):
         sjoin(points, gdf_out, how='inner', op='intersects').\
         dissolve(by='level_1')
 
+def convex_hull(*args, **kwargs):
+    '''
+    accepts geopandas gdf as file
+    Returns convex hull GeoDataFrame
+    '''
+    # try and handle our lone 'points' argument
+    attr_err_msg = "points= input is invalid. try passing" \
+                   " a GeoDataFrame or Vector object."
+    try:
+        _points = kwargs.get('points', args[0])
+        if isinstance(_points, gp.GeoDataFrame):
+            pass
+        elif isinstance(_points, Vector):
+            _points = _points.to_geopandas()
+        else:
+            raise AttributeError(attr_err_msg)
+    except AttributeError:
+        raise AttributeError(attr_err_msg)
+    except Exception as e:
+        raise e
+
+    return _points.convex_hull()
 
 def fuzzy_convex_hulls(*args, **kwargs):
     """accepts geopandas datatframe as SpatialPoints, buffers the point geometries by some distance,
     and than builds a convex hull feature collection from clusters of points
     """
-    _points = kwargs.get('points', args[0])
-    _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is not None) else _DEFAULT_BUFFER_WIDTH
+    _points = kwargs.get('points', args[0]) if (kwargs.get('points', args[0]) is not None)\
+        else None
+    _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is not None) \
+        else _DEFAULT_BUFFER_WIDTH
     # generate circular point buffers around our SpatialPoints features
     try:
-        _point_buffers = _points
-        _point_buffers = _points.geometry.buffer(_width)
+        _point_buffers = copy(_points)
+        if _point_buffers.crs['units'].find('meter') > 0:
+            _point_buffers = _point_buffers.buffer(_width)
+        else:
+            _point_buffers = _point_buffers.buffer(_width / _METERS_TO_DEGREES)
     # assume AttributeErrors are due to args[0] not being a GeoPandas object
     except AttributeError as e:
         # if this is a string, assume that it is a path
         # and try and open it -- otherwise raise an error
         if isinstance(_points, str):
             _points = Vector(_points).to_geopandas()
-            _point_buffers = _points
-            _point_buffers = _point_buffers.geometry.buffer(_width)
+            _point_buffers = copy(_points)
+            if _point_buffers.crs['units'].find('meter') > 0:
+                _point_buffers = _point_buffers.buffer(_width)
+            else:
+                _point_buffers = _point_buffers.buffer(_width/_METERS_TO_DEGREES)
         else:
             raise e
     except Exception as e:

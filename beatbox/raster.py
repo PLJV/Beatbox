@@ -43,6 +43,7 @@ class Raster:
         georasters.create_geotiff(name=dst_filename, Array=self.array, geot=self.geot, projection=self.projection,
                                   datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
                                   ysize=self.ysize)
+
     def map_to_disk(self):
         """map the contents of r.array to disk using numpy.memmap"""
         pass
@@ -59,7 +60,6 @@ class Raster:
     def to_ee_image(self):
         pass
 
-
 class NassCdlRaster(Raster):
     """Inherits the functionality of the GeoRaster class and
     extends its functionality with filters and re-classification tools useful
@@ -73,10 +73,6 @@ class NassCdlRaster(Raster):
         the Raster Attribute Table
         """
         pass
-
-
-def reclassify(*args, **kwargs):
-    pass
 
 
 def binary_reclassify(*args, **kwargs):
@@ -94,6 +90,10 @@ def binary_reclassify(*args, **kwargs):
         ),
         _raster.array.shape
     )
+
+
+def reclassify(*args, **kwargs):
+    pass
 
 
 def crop(*args, **kwargs):
@@ -139,6 +139,26 @@ def split(*args, **kwargs):
         numpy.array(_raster.array,dtype=str(_raster.array.data.dtype)),
         _n
     )
+
+def ram_sanity_check(*args, **kwargs):
+    """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
+    between your available ram and your proposed operation(s). Negatives are bad. """
+    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
+    _dtype = kwargs.get('dtype', args[1]) if kwargs.get('dtype', args[1]) is not None else None
+    _nOperation = kwargs.get('nOperation', args[2]) if kwargs.get('nOperation', args[2]) is not None else None
+    _asGigabytes = kwargs.get('asGigabytes', args[3]) if kwargs.get('asGigabytes', args[3]) is not None else True
+    try:
+        if _dtype is None:
+            _dtype = _raster.array.dtype
+    except Exception as e:
+        raise e
+    return _get_free_ram(asGigabytes=_asGigabytes) - _est_ram_usage(
+        _raster.array.shape,
+        dtype=_dtype,
+        nOperations=_nOperation,
+        asGigabytes=_asGigabytes
+    )
+
 
 def _get_free_ram(asGigabytes=True):
     """ determine the amount of free memory available on the current node
@@ -187,18 +207,3 @@ def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
         asGigabytes = 1
 
     return (dim * numpy.nbytes[dtype] * asGigabytes) ** nOperations
-
-def ram_sanity_check(*args, **kwargs):
-    """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
-    between your available ram and your proposed operation(s). Negatives are bad. """
-    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
-    _dtype = kwargs.get('dtype', args[1]) if kwargs.get('dtype', args[1]) is not None else None
-    _nOperation = kwargs.get('nOperation', args[2]) if kwargs.get('nOperation', args[2]) is not None else None
-    _asGigabytes = kwargs.get('asGigabytes', args[3]) if kwargs.get('asGigabytes', args[3]) is not None else True
-    try:
-        if _dtype is None:
-            _dtype = _raster.array.dtype
-    except Exception as e:
-        raise e
-    return _get_free_ram(asGigabytes=_asGigabytes) - \
-           _est_ram_usage(_raster.array.shape, dtype=_dtype, nOperations=_nOperation, asGigabytes=_asGigabytes)

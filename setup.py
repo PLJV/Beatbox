@@ -12,7 +12,13 @@ except ImportError:
 
 from shutil import copyfile
 
-INSTALL_REQUIRES = ['pandas', 'shapely', 'fiona', 'descartes', 'pyproj', 'geopandas', 'georasters', 'geoplot', 'seaborn', 'psutil', 'requests', 'bs4']
+INSTALL_REQUIRES = [
+    'scipy','pandas', 'shapely', 'fiona',
+    'descartes', 'pyproj', 'geopandas',
+    'georasters', 'geoplot', 'seaborn',
+    'psutil', 'requests', 'bs4', 'ee'
+]
+
 LONG_DESCRIPTION = ""
 
 setup(name='beatbox',

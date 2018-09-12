@@ -13,13 +13,13 @@ __status__ = "Testing"
 import fiona
 import geopandas as gp
 import json
+import copy
 import ee
 
 from shapely.geometry import *
 
-_METERS_TO_DEGREES = 111000
-_DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
-
+_METERS_TO_DEGREES: int = 111000
+_DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
 
 class Vector:
     def __init__(self, *args, **kwargs):
@@ -103,38 +103,37 @@ class Vector:
 
     @geometries.setter
     def geometries(self, *args):
-      try:
-        self._geometries = args[0]
-      except Exception as e:
-        raise e
-      # default behavior is to accept shapely geometry as input, but a
-      # user may pass a string path to a shapefile and we will handle the input
-      # and write it to output -- this is essentially a file copy operation
-      try:
-        self.read(self._geometries)
+        try:
+            self._geometries = args[0]
+        except Exception as e:
+            raise e
+        # default behavior is to accept shapely geometry as input, but a
+        # user may pass a string path to a shapefile and we will handle the input
+        # and write it to output -- this is essentially a file copy operation
+        try:
+            self.read(self._geometries)
         # did you pass an incorrect filename?
-      except OSError as e:
-        raise e
-      # it can't be a string path -- assume is a Collection or Geometry object
-      # and pass it on
-      except Exception:
+        except OSError as e:
+            raise e
+        # it can't be a string path -- assume is a Collection or Geometry object
+        # and pass it on
+        except Exception:
             pass
-      # is this a full Collection that we need to extract geometries from?
-      try:
-        self._geometries = [Shape(ft['geometry'])
-          for ft in self._geometries]
-        if self._schema['geometry'] == 'Polygon':
-          self._geometries = MultiPolygon(self._geometries)
-          self._schema['geometry'] = 'MultiPolygon'
-        elif self._schema['geometry'] == 'Point':
-          self._geometries = MultiPoint(self._geometries)
-          self._schema['geometry'] = 'MultiPoint'
-        elif self._schema['geometry'] == 'Line':
-          self._geometries = MultiLine(self._geometries)
-          self._schema['geometry'] = 'MultiLine'
-      # can't read()? assume this is a Geometry and pass it on
-      except Exception:
-        pass
+        # is this a full Collection that we need to extract geometries from?
+        try:
+            self._geometries = [shape(ft['geometry']) for ft in self._geometries]
+            if self._schema['geometry'] == 'Polygon':
+                self._geometries = MultiPolygon(self._geometries)
+                self._schema['geometry'] = 'MultiPolygon'
+            elif self._schema['geometry'] == 'Point':
+                self._geometries = MultiPoint(self._geometries)
+                self._schema['geometry'] = 'MultiPoint'
+            elif self._schema['geometry'] == 'Line':
+                self._geometries = MultiLineString(self._geometries)
+                self._schema['geometry'] = 'MultiLineString'
+        # can't read()? assume this is a Geometry and pass it on
+        except Exception:
+            pass
 
     def read(self, *args, **kwargs):
         """Short-hand wrapper for fiona.open() that assigns class variables for \
@@ -214,11 +213,14 @@ class Vector:
 
     def to_collection(self):
         """ return a collection of our geometry data """
-        return(self.geometries)
+        return self.geometries
 
     def to_geopandas(self):
         """ return our spatial data as a geopandas dataframe """
-        return gp.read_file(self._filename)
+        _gdf = gp.read_file(self._filename)
+        # make sure we note our units, because GeoPandas doesn't by default
+        _gdf.crs["units"] = ["degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"]
+        return _gdf
 
     def to_ee_feature_collection(self):
         return ee.FeatureCollection(self.to_geojson(stringify=True))
@@ -252,84 +254,54 @@ class Vector:
         if self._crs:
             feature_collection["crs"].append(self._crs)
 
-        if(_as_string):
+        if _as_string:
             feature_collection = json.dumps(feature_collection)
 
         return feature_collection
 
 
+def intersection(vector=None, *args, **kwargs):
+    """ Returns the intersection of our focal Vector class with another Vector class """
+    pass
 
-    def buffer(self, *args, **kwargs):
-        """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
-        distance
+def over(vector=None, *args, **kwargs):
+    """ Returns a boolean vector of overlapping features of our focal Vector class with another Vector class """
+    pass
 
-        Keyword arguments:
-        vector= a Vector object with spatial data
-        width= a width value to use for our buffering (in projected units of a given geometry \
-        -- typically meters or degrees)
 
-        Positional arguments:
-        1st= if no width keyword is provided, the first positional argument is treated as the \
-        width parameter
-        """
-        if 'vector' in list(map(str.lower, kwargs.keys())):
-            _vector_geom = kwargs[['vector']]
-        else:
-            _vector_geom = self.copy()  # spec out a new class to store our buffering results
-        if 'width' in list(map(str.lower, kwargs.keys())):
-            _width = int(kwargs['width'])
-        else:
-            try:
-                _width = int(args[0])
-            except Exception as e:
-                raise e
-        # check and see if we are working in unit meters or degrees
-        if _vector_geom._crs_wkt.find('Degree') > 0:
-            _width = _DEGREES_TO_METERS * _width
-        # build a schema for our buffering operations
-        target_schema = _vector_geom.schema
-        target_schema['geometry'] = 'MultiPolygon'
-        # iterate our feature geometries and cast the output geometry as
-        # a MultiPolygon geometry
-        _vector_geom.schema = target_schema
-        _vector_geom.geometries = MultiPolygon(
-            [shape(ft['geometry']).buffer(_width)
-             for ft in _vector_geom.geometries])
+def buffer(*args, **kwargs):
+    """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
+    distance
 
-        return (_vector_geom)
+    Keyword arguments:
+    vector= a Vector object with spatial data
+    width= a width value to use for our buffering (in projected units of a given geometry \
+    -- typically meters or degrees)
 
-    @staticmethod
-    def convex_hull(*args, **kwargs):
-        '''
-        accepts geopandas gdf as file
-        Returns convex hull GeoDataFrame
-        '''
-        # try and handle our lone 'points' argument
+    Positional arguments:
+    1st= if no width keyword is provided, the first positional argument is treated as the \
+    width parameter
+    """
+    _vector_geom = kwargs.get('vector', args[0]) if kwargs.get('vector', args[0]) is not None else None
+    _vector_geom = copy(_vector_geom)  # spec out a new class to store our buffering results
+    if 'width' in list(map(str.lower, kwargs.keys())):
+        _width = int(kwargs['width'])
+    else:
         try:
-            _points = kwargs.get('points', args[0])
-            if isinstance(_points, gp.GeoDataFrame):
-                pass
-            elif isinstance(_points, Vector):
-                _points = _points.to_geopandas()
-            else:
-                raise AttributeError(
-                    "points= input is invalid. try passing a GeoDataFrame or Vector object."
-                )
-        except AttributeError:
-            raise AttributeError(
-                "points= input is invalid. try passing a GeoDataFrame or Vector object."
-            )
+            _width = int(args[0])
         except Exception as e:
             raise e
+    # check and see if we are working in unit meters or degrees
+    if _vector_geom._crs_wkt.find('Degree') > 0:
+        _width = _DEGREES_TO_METERS * _width
+    # build a schema for our buffering operations
+    target_schema = _vector_geom.schema
+    target_schema['geometry'] = 'MultiPolygon'
+    # iterate our feature geometries and cast the output geometry as
+    # a MultiPolygon geometry
+    _vector_geom.schema = target_schema
+    _vector_geom.geometries = MultiPolygon(
+        [shape(ft['geometry']).buffer(_width)
+         for ft in _vector_geom.geometries])
 
-        return _points.convex_hull()
-
-    @staticmethod
-    def intersection(vector=None, *args, **kwargs):
-        """ Returns the intersection of our focal Vector class with another Vector class """
-        pass
-
-    @staticmethod
-    def over(vector=None, *args, **kwargs):
-        """ Returns a boolean vector of overlapping features of our focal Vector class with another Vector class """
-        pass
+    return (_vector_geom)
