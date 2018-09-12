@@ -191,7 +191,7 @@ class Vector:
         except Exception as e:
             raise e
 
-    def copy(self):
+    def __copy__(self):
         """ simple copy method that creates a new instance of a vector class and assigns \
         default attributes from the parent instance
 
@@ -207,6 +207,10 @@ class Vector:
         _vector_geom._filename = self._filename
 
         return _vector_geom
+
+    def __deepcopy__(self, memodict={}):
+        """ a deep copy is a shallow copy is a deep copy """
+        return self.__copy__()
 
     def to_collection(self):
         """ return a collection of our geometry data """
