@@ -13,7 +13,6 @@ __status__ = "Testing"
 import fiona
 import geopandas as gp
 import json
-import ee
 
 from copy import copy
 from shapely.geometry import *
@@ -238,6 +237,7 @@ class Vector:
         return _gdf
 
     def to_ee_feature_collection(self):
+        import ee 
         return ee.FeatureCollection(self.to_geojson(stringify=True))
 
     def to_geojson(self, *args, **kwargs):
