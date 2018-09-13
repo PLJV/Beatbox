@@ -142,10 +142,17 @@ def fuzzy_convex_hulls(*args, **kwargs):
     :param kwargs:
     :return:
     """
-    _points = kwargs.get('points', args[0]) if (kwargs.get('points', args[0]) is not None)\
-        else None
-    _width = kwargs.get('width', args[1]) if (kwargs.get('width', args[1]) is not None) \
-        else _DEFAULT_BUFFER_WIDTH
+    try:
+        _points = kwargs.get('points', args[0])
+    except IndexError:
+        raise IndexError("invalid points= argument passed by user")
+    try:
+        _width = kwargs.get('width', args[1])
+    except IndexError:
+        _width = _DEFAULT_BUFFER_WIDTH
+    # drop our points features into a gdf if they aren't already
+    if not isinstance(_points, gp.GeoDataFrame):
+        _points = _points.to_geodataframe()
     # generate circular point buffers around our SpatialPoints features
     try:
         _point_buffers = copy(_points)
