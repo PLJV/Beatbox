@@ -31,8 +31,7 @@ convex_hulls = fuzzy_convex_hulls(spatial_points, width=1033)
 
 result = Do({
   'what': ee_extract,
-  'with': convex_hulls,
-  'and' : water_raster
+  'with': [ convex_hulls, water_raster ]
 })
 
 ```
