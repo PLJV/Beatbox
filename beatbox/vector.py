@@ -49,7 +49,29 @@ class Vector:
             self.read(kwargs.get('filename', args[0]))
         except Exception as e:
             raise e
+            
+    def __copy__(self):
+        """ simple copy method that creates a new instance of a vector class and assigns \
+        default attributes from the parent instance
 
+        Keyword arguments: None
+
+        Positional arguments: None
+        """
+        _vector_geom = Vector()
+        _vector_geom._geometries = self._geometries
+        _vector_geom._attributes = self._attributes
+        _vector_geom._crs = self._crs
+        _vector_geom._crs_wkt = self._crs_wkt
+        _vector_geom._schema = self._schema
+        _vector_geom._filename = self._filename
+
+        return _vector_geom
+
+    def __deepcopy__(self, memodict={}):
+        """ a deep copy is a shallow copy is a deep copy """
+        return self.__copy__()
+    
     @property
     def filename(self):
         """ decorated getter for our filename """
@@ -123,23 +145,12 @@ class Vector:
         # it can't be a string path -- assume is a Collection or Geometry object
         # and pass it on
         except Exception:
-            pass
-        # is this a full Collection that we need to extract geometries from?
-        try:
-            self._geometries = [shape(ft['geometry']) for ft in list(self._geometries)]
-            if self._schema['geometry'] == 'Polygon':
-                self._geometries = MultiPolygon(self._geometries)
-                self._schema['geometry'] = 'MultiPolygon'
-            elif self._schema['geometry'] == 'Point':
-                self._geometries = MultiPoint(self._geometries)
-                self._schema['geometry'] = 'MultiPoint'
-            elif self._schema['geometry'] == 'Line':
-                self._geometries = MultiLineString(self._geometries)
-                self._schema['geometry'] = 'MultiLineString'
-        # can't read()? assume this is a Geometry and pass it on
-        except Exception:
-            pass
-
+            self._geometries = self._geometries_to_shapely_list(self._geometries)
+            
+    @staticmethod        
+    def _geometries_to_shapely_list(geometries=None):
+        return [shape(ft['geometry']) for ft in list(geometries)]
+        
     def read(self, *args, **kwargs):
         """Short-hand wrapper for fiona.open() that assigns class variables for \
          CRS, geometry, and schema.
@@ -161,7 +172,8 @@ class Vector:
         try:
             self._crs = shape_collection.crs
             self._crs_wkt = shape_collection.crs_wkt
-            self._geometries = shape_collection
+            # parse our dict of geometries into an actual shapely list
+            self._geometries = self._geometries_to_shapely_list(shape_collection)
             self._schema = shape_collection.schema
         except Exception as e:
             raise e
@@ -194,28 +206,6 @@ class Vector:
                 })
         except Exception as e:
             raise e
-
-    def __copy__(self):
-        """ simple copy method that creates a new instance of a vector class and assigns \
-        default attributes from the parent instance
-
-        Keyword arguments: None
-
-        Positional arguments: None
-        """
-        _vector_geom = Vector()
-        _vector_geom._geometries = self._geometries
-        _vector_geom._attributes = self._attributes
-        _vector_geom._crs = self._crs
-        _vector_geom._crs_wkt = self._crs_wkt
-        _vector_geom._schema = self._schema
-        _vector_geom._filename = self._filename
-
-        return _vector_geom
-
-    def __deepcopy__(self, memodict={}):
-        """ a deep copy is a shallow copy is a deep copy """
-        return self.__copy__()
 
     def to_collection(self):
         """ return a collection of our geometry data """
