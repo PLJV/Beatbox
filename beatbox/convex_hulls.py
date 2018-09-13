@@ -18,7 +18,7 @@ from copy import copy
 from scipy.sparse.csgraph import connected_components
 
 _DEFAULT_BUFFER_WIDTH: int = 1000  # default width (in meters) of a geometry for various buffer operations
-_METERS_TO_DEGREES: float = 111000
+_METERS_TO_DEGREES: int = 111000
 _DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
 _ARRAY_MAX: int = 1000 # maximum array length to attempt numpy operations on before chunking
 
@@ -48,9 +48,10 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     :param kwargs:
     :return:
     """
-    _buffers = kwargs.get('buffers', args[0]) if \
-        (kwargs.get('buffers', args[0]) is not None) \
-        else None
+    try:
+        _buffers = kwargs.get('buffers', args[0])
+    except IndexError:
+        raise IndexError("invalid buffers= argument provided by user")
     # force casting as a GeoDataFrame
     try:
         _buffers = gp.GeoDataFrame({
@@ -64,12 +65,13 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     except Exception as e:
         raise e
     # determine appropriate groupings for our overlapping buffers
-    if len(_buffers) > _ARRAY_MAX:
+    if _buffers.size > _ARRAY_MAX:
         split = int(round(_buffers.size / _ARRAY_MAX) + 1)
         logger.warning("Attempting dissolve operation on a large vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries", split)
         chunks = list(_chunks(_buffers, split))
-        chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d]
+        # listcomp magic : for each geometry, determine whether it overlaps with all other geometries in this chunk
+        chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d.explode()]
         overlap_matrix = np.concatenate(chunks)
     else:
         overlap_matrix = np.concatenate(
@@ -97,12 +99,14 @@ def _attribute_by_overlap(*args, **kwargs):
     :param kwargs:
     :return:
     """
-    _buffers = kwargs.get('buffers', args[0]) if \
-        (kwargs.get('buffers', args[0]) is not None)\
-        else None
-    _points = kwargs.get('points', args[1]) if \
-        (kwargs.get('points', args[1]) is not None)\
-        else None
+    try:
+        _buffers = kwargs.get('buffers', args[0])
+    except IndexError:
+        raise IndexError("invalid buffers= argument provided by user")
+    try:
+        _points = kwargs.get('points', args[1])
+    except IndexError:
+        raise IndexError("invalid points= argument provided by user")
     # dissolve-by explode
     gdf_out = _dissolve_overlapping_geometries(_buffers)
     # return the right-sided spatial join
