@@ -31,8 +31,11 @@ def _chunks(*args):
     :param args:
     :return:
     """
-    _array = args[0]
-    _n_chunks = args[1]
+    try:
+        _array = args[0]
+        _n_chunks = args[1]
+    except IndexError as e:
+        raise e
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(_array), _n_chunks):
         yield _array[i:i + _n_chunks]
@@ -62,7 +65,7 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         raise e
     # determine appropriate groupings for our overlapping buffers
     if len(_buffers) > _ARRAY_MAX:
-        split = round(_buffers.size / _ARRAY_MAX) + 1
+        split = int(round(_buffers.size / _ARRAY_MAX) + 1)
         logger.warning("Attempting dissolve operation on a large vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries", split)
         chunks = list(_chunks(_buffers, split))
