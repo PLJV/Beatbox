@@ -126,7 +126,7 @@ class Vector:
             pass
         # is this a full Collection that we need to extract geometries from?
         try:
-            self._geometries = [shape(ft['geometry']) for ft in self._geometries]
+            self._geometries = [shape(ft['geometry']) for ft in list(self._geometries)]
             if self._schema['geometry'] == 'Polygon':
                 self._geometries = MultiPolygon(self._geometries)
                 self._schema['geometry'] = 'MultiPolygon'
