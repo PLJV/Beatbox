@@ -7,13 +7,15 @@ We maintain beatbox and make it publically available so that our collaborators c
 
 # Installation
 From a direct download:
-```python3 setup.py install```
+```python setup.py install```
 
 From conda / pip:
 ```bash
-conda install gdal numpy fiona shapely seaborn geopandas geoplot pyCrypto
+conda install pyCrypto GDAL numpy pandas fiona shapely geopandas scikit-learn 
+
 pip install google-api-python-client
 pip install earthengine-api
+
 pip uninstall Beatbox
 pip install git+git://github.com/PLJV/Beatbox.git
 ```
@@ -23,6 +25,7 @@ pip install git+git://github.com/PLJV/Beatbox.git
 ```python
 from beatbox import Vector, Raster
 
-some_vector_data = Vector("/path/to/shapefile.shp")
 some_raster_data = Raster("/path/to/raster.tif")
+spatial_points = Vector("/path/to/spatialpoints.shp")
+
 ```
