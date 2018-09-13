@@ -30,7 +30,7 @@ spatial_points = Vector("/path/to/spatialpoints.shp")
 convex_hulls = fuzzy_convex_hulls(spatial_points, width=1033)
 
 result = Do({
-  'what': ee_extract,
+  'what': extract,
   'with': [ convex_hulls, water_raster ]
 })
 
