@@ -47,6 +47,8 @@ class Vector:
 
         try:
             self.read(kwargs.get('filename', args[0]))
+        except IndexError:
+            pass
         except Exception as e:
             raise e
             
@@ -163,7 +165,9 @@ class Vector:
         as the filename
         """
         try:
-            self._filename = kwargs.get('filename', args[0]) if kwargs.get('filename', args[0]) else self._filename
+            self._filename = kwargs.get('filename', args[0])
+        except IndexError as e:
+            pass # perhaps we explicitly set filename elsewhere?
         except Exception as e:
             raise e
 
@@ -187,7 +191,9 @@ class Vector:
         1st -- if no keyword argument was used, attempt to .read the first pos argument
         """
         try:
-            self._filename = kwargs.get('filename', args[0]) if kwargs.get('filename', args[0]) else ''
+            self._filename = kwargs.get('filename', args[0])
+        except IndexError:
+            pass # perhaps we explicitly set our filename elsewhere
         except Exception:
             pass # assume we previously defined a _filename to use for our write()
 
@@ -287,9 +293,15 @@ def buffer(*args, **kwargs):
     1st= if no width keyword is provided, the first positional argument is treated as the \
     width parameter
     """
-    _vector_geom = kwargs.get('vector', args[0]) if kwargs.get('vector', args[0]) is not None else None
+    try:
+        _vector_geom = kwargs.get('vector', args[0])
+    except IndexError:
+        raise IndexError("invalid vector= argument passed by user")
     _vector_geom = copy(_vector_geom)  # spec out a new class to store our buffering results
-    _width = kwargs.get('width', args[1]) if kwargs.get('width', args[1]) is not None else None
+    try:
+        _width = kwargs.get('width', args[1])
+    except IndexError:
+        raise IndexError("invalid width= argument passed by user")
     # check and see if we are working in unit meters or degrees
     if _vector_geom._crs_wkt.find('Degree') > 0:
         _width = _DEGREES_TO_METERS * _width
