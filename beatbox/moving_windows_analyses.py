@@ -13,9 +13,12 @@ __status__ = "Testing"
 import os
 import re
 import numpy
+import logging
 
 from scipy import ndimage
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def gen_circular_array(nPixels=None):
     """ make a 2-d array for buffering. It represents a circle of
@@ -48,9 +51,8 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None,
         _FOOTPRINT = footprint if footprint is True else \
         numpy.array(gen_circular_array(nPixels=size//2))
     except TypeError as e:
-        print("You may have missed a size= or footprint= argument to \
-        generic_filter()")
-        raise e
+        raise TypeError("You may have missed a size= or"
+                        " footprint= argument to generic_filter()")
     # lazy duck type and apply ndimage filter to user specifications
     try:
         image = r.array
@@ -65,13 +67,12 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None,
         )
     except RuntimeError as e:
         if re.search(e, "function"):
-            print("function= argument cannot be None")
+            raise RuntimeError("function= argument cannot be None")
         else:
-            print("exiting on an unhandled exception")
-        raise e
+            raise RuntimeError("exiting on an unhandled exception")
     except ValueError as e:
-        print("You may have missed a function= argument to generic_filter()")
-        raise e
+        raise ValueError("You may have missed a function= argument "
+                         "to generic_filter()")
 
     # either save to disk or return to user
     if _WRITE_FILE:
@@ -80,15 +81,15 @@ def generic_filter(r=None, destfile=None, write=True, footprint=None,
             r.array=image
             r.write(dst_filename = str(destfile))
         except AttributeError as e:
-            print(e + "doesn't appear to be a Raster object; returning generic_filter result to user")
+            logger.warning("%s doesn't appear to be a Raster object; "
+                           "returning generic_filter result to user", e)
 
             destfile = destfile.replace(".tif", "") # gdal will append for us
             r.array = image
             r.write(dst_filename=str(destfile))
         except Exception as e:
-            print(e + "doesn't appear to be a Raster object; returning \
-            generic_filter result to user")
-
+            logger.warning("%s doesn't appear to be a Raster object; "
+                           "returning generic_filter result to user", e)
             return image
     else:
         return image

@@ -18,8 +18,13 @@ import ee
 from copy import copy
 from shapely.geometry import *
 
+import logging
+
 _METERS_TO_DEGREES: int = 111000
 _DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Vector:
     def __init__(self, *args, **kwargs):
@@ -222,9 +227,11 @@ class Vector:
         try:
             _gdf = gp.GeoDataFrame({
                 "geometry": gp.GeoSeries(self._geometries),
-                "crs": self._crs
             })
-        except Exception as e:
+            _gdf.crs = self._crs
+        except Exception:
+            logger.warning("failed to build a GeoDataFrame from shapely geometries -- "
+                           "will try to read from original source file instead")
             _gdf = gp.read_file(self._filename)
         # make sure we note our units, because GeoPandas doesn't by default
         _gdf.crs["units"] = "degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"

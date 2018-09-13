@@ -62,19 +62,18 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         raise e
     # determine appropriate groupings for our overlapping buffers
     if len(_buffers) > _ARRAY_MAX:
+        split = round(_buffers.size / _ARRAY_MAX) + 1
         logger.warning("Attempting dissolve operation on a large vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries", split)
-        split = round(_buffers.size / _ARRAY_MAX) + 1
         chunks = list(_chunks(_buffers, split))
         chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d]
         overlap_matrix = np.concatenate(chunks)
-        overlap_matrix.shape = (len(_buffers), len(_buffers))
     else:
         overlap_matrix = np.concatenate(
             [_buffers.geometry.overlaps(x).values.astype(int) for x in _buffers]
         )
-        overlap_matrix.shape = (len(_buffers), len(_buffers))
     # merge attributes
+    overlap_matrix.shape = (len(_buffers), len(_buffers))
     n, ids = connected_components(overlap_matrix)
     dissolved_buffers = gp.GeoDataFrame({
         'geometry': _buffers.geometry,
@@ -106,7 +105,8 @@ def _attribute_by_overlap(*args, **kwargs):
     # return the right-sided spatial join
     return gp.\
         sjoin(_points, gdf_out, how='inner', op='intersects').\
-        dissolve(by='level_1')
+        rename(columns={'index_right': 'clst_id'})
+
 
 def convex_hull(*args, **kwargs):
     """
@@ -170,32 +170,16 @@ def fuzzy_convex_hulls(*args, **kwargs):
         raise e
     # dissolve our buffered geometries
     point_clusters = _attribute_by_overlap(_point_buffers, _points)
-
-    # build a GeoDataFrame from our dissolved buffers
-    gdf = point_clusters.merge(
-        _point_buffers.drop('geometry', axis=1),
-        left_on='level_0',
-        right_index=True
-    )
-    # 'level_1' is the unique cluster id of points within our buffer geometries
-    gdf = gdf.set_index(['level_0', 'level_1']).set_geometry('geometry')
-    gdf.crs = _point_buffers.crs
-    gdf = gdf.reset_index()
-    # assign unique windfarm ID field to each wind turbine and group them into multi-points
-    windsubset_wID = gp.sjoin(
-        _points,
-        gdf,
-        how='inner',
-        op='intersects'
-    )
-    #create convex hulls around the windturbines based on wind farm windsubset, dissolve--> convex hull
-    windsubset_farms = windsubset_wID.dissolve(by='level_1')
-    hulls = windsubset_farms.convex_hull
-    hulls_gdf = gpd.GeoDataFrame(gpd.GeoSeries(hulls))
-    hulls_gdf['geometry']=hulls_gdf[0]
-    hulls_gdf.crs = {'init': 'epsg:32614'}
-    del hulls_gdf[0] #Clean up that weird column in the hulls
-    return hulls_gdf
+    # drop any strange columns (i.e., not our clst_id or geometries)
+    cols_to_remove = list(point_clusters.columns)
+    cols_to_remove.remove('clst_id')
+    cols_to_remove.remove('geometry')
+    for col in cols_to_remove:
+        del point_clusters[col]
+    # return our convex hulls as a GeoDataFrame
+    gdf = gp.GeoDataFrame({'geometry': point_clusters.convex_hull})
+    gdf.crs = point_clusters.crs
+    return(gdf)
 
 
 if __name__ == "__main__":
