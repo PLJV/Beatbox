@@ -75,7 +75,7 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         overlap_matrix = np.concatenate(chunks)
     else:
         overlap_matrix = np.concatenate(
-            [_buffers.geometry.overlaps(x).values.astype(int) for x in _buffers]
+            [_buffers.geometry.overlaps(x).values.astype(int) for x in _buffers.explode()]
         )
     # merge attributes
     overlap_matrix.shape = (len(_buffers), len(_buffers))
