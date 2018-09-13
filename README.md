@@ -23,7 +23,7 @@ pip install git+git://github.com/PLJV/Beatbox.git
 # Quickstart
 ## using ipython
 ```python
-from beatbox import Do, Vector, fuzzy_convex_hulls
+from beatbox import Do, Vector, Raster, fuzzy_convex_hulls
 
 water_raster = Raster("/path/to/water_raster.tif")
 spatial_points = Vector("/path/to/spatialpoints.shp")
