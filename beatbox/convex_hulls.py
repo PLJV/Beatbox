@@ -61,7 +61,8 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         if isinstance(_buffers, gp.GeoDataFrame):
             pass
         else:
-            raise e
+            raise ValueError("Invalid buffers= argument input -- failed to"
+                             " make a GeoDataFrame from input provided")
     except Exception as e:
         raise e
     # determine appropriate groupings for our overlapping buffers
@@ -71,8 +72,12 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
                        "which may lead to artifacts at boundaries", split)
         chunks = list(_chunks(_buffers, split))
         # listcomp magic : for each geometry, determine whether it overlaps with all other geometries in this chunk
-        chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d.explode()]
-        overlap_matrix = np.concatenate(chunks)
+        try:
+            chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d.explode()]
+        except AttributeError:
+            raise AttributeError("Encountered an error when checking for overlaps in chunks of buffered input. "
+                                 "This shouldn't happen. Consider updating your libraries with conda/pip and try"
+                                 " again.")
     else:
         overlap_matrix = np.concatenate(
             [_buffers.geometry.overlaps(x).values.astype(int) for x in _buffers.explode()]

@@ -60,29 +60,23 @@ class Raster:
     def to_ee_image(self):
         pass
 
-class NassCdlRaster(Raster):
-    """Inherits the functionality of the GeoRaster class and
-    extends its functionality with filters and re-classification tools useful
-    for dealing with NASS CDL data.
-    :arg file string specifying the full path to a raster file (typically a GeoTIFF)"""
-    def __init__(self, **kwargs):
-        super(NassCdlRaster, self).__init__(**kwargs)
-
-    def bootstrap(self):
-        """ bootstrap selection of NASS cell values for crops using names from
-        the Raster Attribute Table
-        """
-        pass
-
-
-def binary_reclassify(*args, **kwargs):
+def _generic_binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
     self.array are reclassified as uint8(boolean) based on whether they
     match or do not match the values of an input match array.
     """
-    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
-    _match = kwargs.get('match', args[1]) if kwargs.get('match', args[1]) is not None else None
-    _invert = kwargs.get('invert', args[2]) if kwargs.get('invert', args[2]) is not None else None
+    try:
+        _raster = kwargs.get('raster', args[0])
+    except IndexError:
+        IndexError("invalid raster= argument supplied by user")
+    try:
+        _match = kwargs.get('match', args[1])
+    except IndexError:
+        IndexError("invalid match= argument supplied by user")
+    try:
+        _invert = kwargs.get('invert', args[2])
+    except IndexError:
+        IndexError("invalid invert= argument supplied by user")
     return numpy.reshape(
         numpy.array(
             numpy.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
@@ -92,11 +86,11 @@ def binary_reclassify(*args, **kwargs):
     )
 
 
-def reclassify(*args, **kwargs):
+def _generic_reclassify(*args, **kwargs):
     pass
 
 
-def crop(*args, **kwargs):
+def _generic_crop(*args, **kwargs):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
@@ -106,22 +100,35 @@ def crop(*args, **kwargs):
         raise e
 
 
-def clip(*args, **kwargs):
+def _generic_clip(*args, **kwargs):
     """clip is a hold-over from gr that performs a crop operation"""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
     return crop(raster=_raster, shape=_shape)
 
 
-def extract(*args, **kwargs):
+def _generic_extract(*args, **kwargs):
+    """
+    generic raster extraction handler
+    :param args: 
+    :param kwargs: 
+    :return: 
+    """pass
+
+
+def _ee_extract(*args, **kwargs):
+    """
+    EE raster extraction handler
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+def _generic_reproject(*args, **kwargs):
     pass
 
 
-def reproject(*args, **kwargs):
-    pass
-
-
-def merge(*args, **kwargs):
+def _generic_merge(*args, **kwargs):
     """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
     _rasters = kwargs.get('rasters', args[0]) if kwargs.get('raster', args[0]) is not None else None
     try:
@@ -130,7 +137,7 @@ def merge(*args, **kwargs):
         raise e
 
 
-def split(*args, **kwargs):
+def _generic_split(*args, **kwargs):
     """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation."""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
@@ -140,7 +147,7 @@ def split(*args, **kwargs):
         _n
     )
 
-def ram_sanity_check(*args, **kwargs):
+def _ram_sanity_check(*args, **kwargs):
     """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
     between your available ram and your proposed operation(s). Negatives are bad. """
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
