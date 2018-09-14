@@ -4,5 +4,5 @@ The scripts path contains standalone python scripts that can be called from a sh
 ### Quickstart
 ##### From BASH:
 ```bash
-python moving_windows.py -r nass_2016.tif -reclass row_crop=1,2,3 wheat=2,7 -mw 3,11,33 -function numpy.sum
+python moving_windows.py -r nass_2017.tif -reclass row_crop=1,2,3 wheat=2,7; -mw 3,11,33 -function numpy.sum
 ```
