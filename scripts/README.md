@@ -1,5 +1,5 @@
 ### Scripts
-The scripts path contains standalone python scripts that can be called from a shell to perform common GIS tasks. You can also import the scripts on the client-side for integration into your own workflows.
+The scripts directory contains standalone python scripts that can be called from a shell to perform common GIS tasks. You can also import the scripts on the client-side for integration into your own workflows.
 
 ### Quickstart
 ##### From BASH:
