@@ -20,14 +20,15 @@ from scipy.sparse.csgraph import connected_components
 _DEFAULT_BUFFER_WIDTH: int = 1000  # default width (in meters) of a geometry for various buffer operations
 _METERS_TO_DEGREES: int = 111000
 _DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
-_ARRAY_MAX: int = 1000 # maximum array length to attempt numpy operations on before chunking
+_ARRAY_MAX: int = 800 # maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def _chunks(*args):
     """
-    hidden function
+    Hidden function that will accept an array (list) and split it up into
+    chunks of an arbitrary length using the Python yield built-in
     :param args:
     :return:
     """
@@ -40,10 +41,23 @@ def _chunks(*args):
     for i in range(0, len(_array), _n_chunks):
         yield _array[i:i + _n_chunks]
 
+def _units_are_metric(*args):
+    """
+    Hidden function that will (hackishly) determine whether
+    a Shapely or GeoPandas object's Coordinate Reference System
+    is using units of meters or degrees. This is needed for
+    input data where a 'units' attribute is not set by Fiona
+    or GeoPandas when a shapefile is read
+    :param args:
+    :return:
+    """
+    return True if args[0].crs['units'].find('meter') > 0 else False
 
 def _dissolve_overlapping_geometries(*args, **kwargs):
     """
-    hidden function
+    Hidden function that will accept a GeoDataFrame containing Polygons,
+    explode the geometries from single part to multi part, and then dissolve
+    geometries that overlap spatially.
     :param args:
     :param kwargs:
     :return:
@@ -71,9 +85,16 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         logger.warning("Attempting dissolve operation on a large vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries", split)
         chunks = list(_chunks(_buffers, split))
-        # listcomp magic : for each geometry, determine whether it overlaps with all other geometries in this chunk
         try:
-            chunks = [_buffers.geometry.overlaps(x).values.astype(int) for i, d in enumerate(chunks) for x in d.explode()]
+            # listcomp magic : for each geometry, determine whether it overlaps with
+            # all other geometries in this chunk
+            overlap_matrix = np.concatenate(
+                [_buffers.geometry.overlaps(x).values.astype(int)
+                 for i, d in enumerate(chunks)
+                 for x in d.explode()]
+            )
+            # free-up our RAM
+            del chunks
         except AttributeError:
             raise AttributeError("Encountered an error when checking for overlaps in chunks of buffered input. "
                                  "This shouldn't happen. Consider updating your libraries with conda/pip and try"
@@ -97,9 +118,9 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
 
 def _attribute_by_overlap(*args, **kwargs):
     """
-    hidden function that will use the group attribute from polygon features to classify
-    point geometries -- this is intended to be used as a 'fuzzy' point
-    classifier for point features entering a convex hull
+    Hidden function that will use the group attribute from polygon features to classify
+    point geometries -- this is intended to be used as a classifier for overlapping
+    geometries
     :param args:
     :param kwargs:
     :return:
@@ -122,7 +143,7 @@ def _attribute_by_overlap(*args, **kwargs):
 
 def convex_hull(*args, **kwargs):
     """
-    accepts point features as a GeoDataFrame and uses geopandas to
+    Accepts point features as a GeoDataFrame and uses geopandas to
     calulate a convex hull from the geometries
     :param args:
     :param kwargs:
@@ -148,8 +169,8 @@ def convex_hull(*args, **kwargs):
 
 def fuzzy_convex_hulls(*args, **kwargs):
     """
-    accepts geopandas datatframe as SpatialPoints, buffers the point geometries by some distance,
-    and than builds a convex hull feature collection from clusters of points
+    Accepts a GeoDataFrame containing points, buffers the point geometries by some distance,
+    and than builds convex hulls from point clusters
     :param args:
     :param kwargs:
     :return:
@@ -168,7 +189,9 @@ def fuzzy_convex_hulls(*args, **kwargs):
     # generate circular point buffers around our SpatialPoints features
     try:
         _point_buffers = copy(_points)
-        if _point_buffers.crs['units'].find('meter') > 0:
+        # adjust the width= parameter based on the projection
+        # of our point buffers
+        if _units_are_metric(_point_buffers):
             _point_buffers = _point_buffers.buffer(_width)
         else:
             _point_buffers = _point_buffers.buffer(_width / _METERS_TO_DEGREES)
@@ -187,12 +210,10 @@ def fuzzy_convex_hulls(*args, **kwargs):
             raise e
     except Exception as e:
         raise e
-    # dissolve our buffered geometries
+    # dissolve overlapping buffered geometries
     point_clusters = _attribute_by_overlap(_point_buffers, _points)
-    # drop any strange columns (i.e., not our clst_id or geometries)
-    cols_to_remove = list(point_clusters.columns)
-    cols_to_remove.remove('clst_id')
-    cols_to_remove.remove('geometry')
+    # drop any strange columns lurking in our data (i.e., not our clst_id or geometries)
+    cols_to_remove = list(point_clusters.columns).remove('clst_id').remove('geometry')
     for col in cols_to_remove:
         del point_clusters[col]
     # return our convex hulls as a GeoDataFrame

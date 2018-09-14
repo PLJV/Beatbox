@@ -1,3 +1,8 @@
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 class Do:
     def __init__(self, *args):
         """
@@ -10,8 +15,18 @@ class Do:
         try:
             self.run = args[0]
         except AttributeError:
-            raise AttributeError("Failed to run action. Do assumes that the input is an attributed python "
-                                 "dictionary. Is the object you passed something else?")
+            raise AttributeError("Failed to run Do action. Do assumes that the input provided "
+                                 "is an attributed python dictionary. Is the object you passed "
+                                 "something else?")
+
+    def _check_backend(self, *args):
+        """
+        Parse the parameters specified by 'what' to determine whether this should run locally or on
+        Earth Engine. Will set optional values for 'with' explicitly
+        :param args:
+        :return:
+        """
+        pass
 
     @property
     def run(self):
@@ -35,19 +50,11 @@ class Do:
         try:
             self._run = args[0]['run']
             self._what = args[0]['what']
-            self._with = args[0]['with']
+            self._with = args[0]['with']  # allow the user to set the backend explicitly
         except Exception as e:
             raise e
-        # determine
+        # determine what backend to use (or if the user specified
+        # backend is inappropriate for the given data)
         self._check_backend()
         # launch our run function
         return self.run
-
-    def _check_backend(self, *args):
-        """
-        Parse the parameters specified by 'what' to determine whether this should run locally or on
-        Earth Engine
-        :param args:
-        :return:
-        """
-        pass

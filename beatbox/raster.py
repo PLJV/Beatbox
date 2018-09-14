@@ -104,16 +104,17 @@ def _generic_clip(*args, **kwargs):
     """clip is a hold-over from gr that performs a crop operation"""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
-    return crop(raster=_raster, shape=_shape)
+    return _generic_crop(raster=_raster, shape=_shape)
 
 
 def _generic_extract(*args, **kwargs):
     """
     generic raster extraction handler
-    :param args: 
-    :param kwargs: 
-    :return: 
-    """pass
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    pass
 
 
 def _ee_extract(*args, **kwargs):
