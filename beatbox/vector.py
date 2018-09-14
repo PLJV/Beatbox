@@ -25,6 +25,7 @@ _DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class Vector:
     def __init__(self, *args, **kwargs):
         """Handles file input/output operations for shapefiles \
@@ -51,7 +52,7 @@ class Vector:
             pass
         except Exception as e:
             raise e
-            
+
     def __copy__(self):
         """ simple copy method that creates a new instance of a vector class and assigns \
         default attributes from the parent instance
