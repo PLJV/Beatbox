@@ -5,7 +5,7 @@ Simple Python wrapper interface for GDAL, GeoRasters, Shapely, and GeoPandas. Be
 
 For an overview of installing the Earth Engine Python API ([RTM](https://developers.google.com/earth-engine/python_install_manual)).
 
-We maintain beatbox and make it publically available (GPLv3) so that our collaborators can check our math. It is still very much under active development (not production ready). For the curious earth systems modeller experimenting with spatial data on Earth Engine or AWS that would like to get their hands dirty, dive in.
+We maintain beatbox and make it publically available (GPLv3) so that our collaborators can check our math. It is still very much under active development and not production ready. For the curious earth systems modeller experimenting with spatial data on Earth Engine or AWS that would like to get their hands dirty, dive in.
 
 ### Installation
 From a direct download:
