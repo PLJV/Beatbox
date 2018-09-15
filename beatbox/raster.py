@@ -3,66 +3,145 @@ Various manipulations on georasters.GeoRaster and numpy objects that we use for 
 """
 
 import numpy
-import georasters
+import georasters as gr
 import gdalnumeric
 import gdal
 import psutil
-import copy
+import logging
+from copy import copy
 
-from tempfile import mkdtemp
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Fickle beast handlers for Earth Engine
+try:
+    import ee
+    ee.initialize()
+except ModuleNotFoundError or ImportError:
+    logger.warning("Failed to load the Earth Engine API. Continue to load but without the EE function.")
+    pass
+
+_DEFAULT_NA_VALUE: int = -9999
+
 
 class Raster:
-    """Raster class is a wrapper meant to extend the functionality of the GeoRaster class
-    :arg file string specifying the full path to a raster file (typically a GeoTIFF)."""
+    """
+    Raster class is a wrapper for generating GeoRasters,
+    Numpy arrays, and Earth Engine Image objects. It opens files
+    and converts to other formats as needed for various backend
+    actions associated with Do.
+    :arg file string specifying the full path to a raster
+    file (typically a GeoTIFF) or an asset id for earth engine
+    :return None
+    """
     def __init__(self, *args, **kwargs):
         """Raster constructor."""
-        if 'crs' in list(map(str.lower, kwargs.keys())):
-            self.array = None
-            self.open(kwargs['file'])
-        else:
-            # assume the array is the first positional arg
+        self._backend = "local" # By default, assume that we are working with raster data locally
+        self._array = None
+        self._filepath = None
+        # GeoRaster compatibility handlers
+        self._ndv = None          # no data value
+        self._x_cell_size = None  # cell size of x (meters/degrees)
+        self._y_cell_size = None  # cell size of y (meters/degrees)
+        self._geot = None         # geographic transformation
+        self._projection = None   # geographic projection
+        # It's possible we want to initialize an empty class
+        # and our args handlers will pass on relevant exceptions
+        try:
+            self._filepath = kwargs.get('file', args[0])
+        except IndexError:
+            pass
+        try:
+            self._array = kwargs.get('array', args[1])
+        except IndexError:
+            pass
+        try:
+            self._array = kwargs.get('array', args[1])
+        except IndexError:
+            pass
+        # if we were passed a file argument, assume it's a
+        # path and try to open it
+        if self._filepath:
             try:
-                self.array = None
-                self.open(args[0])
+                self.open(self._filepath)
             except Exception as e:
                 raise e
 
+    def __copy__(self):
+        _raster = Raster()
+        _raster._array = copy(self._array)
+        _raster._backend = copy(self._backend)
+        return _raster
 
-    def open(self, file=None):
-        """Does what it says."""
-        self.ndv, self.xsize, self.ysize, self.geot, self.projection, datatype = georasters.get_geo_info(file)
-        if self.ndv is None:
-            self.ndv = -99999
-        self.array = gdalnumeric.LoadFile(file)
-        self.y_cell_size = self.geot[1]
-        self.x_cell_size = self.geot[5]
-        self.array = numpy.ma.masked_array(self.array, mask=self.array == self.ndv, fill_value=self.ndv)
+    def __deepcopy__(self, memodict={}):
+        return self.__copy__()
+
+    def open(self, *args, **kwargs):
+        """
+        Open a local file handle for reading and assignment
+        :param file:
+        :return: None
+        """
+        try:
+            _file = kwargs.get('file', args[0])
+        except IndexError:
+            raise
+        # grab raster meta information from GeoRasters
+        self._ndv, _x_size, _y_size, self._geot, self._projection, datatype = gr.get_geo_info(_file)
+        if self._ndv is None:
+            self._ndv = _DEFAULT_NA_VALUE
+
+        self._array = gdalnumeric.LoadFile(self._filepath)
+        self.y_cell_size = self._geot[1]
+        self.x_cell_size = self._geot[5]
+        # we store the the actual raw array
+        # values as a numpy masked array
+        self._array = numpy.ma.masked_array(
+            self._array,
+            mask=self._array == self._ndv,
+            fill_value=self._ndv
+        )
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
-        """wrapper for georasters create_geotiff that writes a numpy array to disk."""
-        georasters.create_geotiff(name=dst_filename, Array=self.array, geot=self.geot, projection=self.projection,
-                                  datatype=format, driver=driver, ndv=self.ndv, xsize=self.xsize,
-                                  ysize=self.ysize)
+        """
+        wrapper for georasters create_geotiff that writes a numpy array to disk.
+        :param dst_filename:
+        :param format:
+        :param driver:
+        :return:
+        """
+        gr.create_geotiff(
+            name=dst_filename,
+            Array=self._array,
+            geot=self._geot,
+            projection=self._projection,
+            datatype=format,
+            driver=driver,
+            ndv=self._ndv,
+            xsize=self._x_cell_size,
+            ysize=self._y_cell_size
+        )
 
     def map_to_disk(self):
-        """map the contents of r.array to disk using numpy.memmap"""
+        """map the contents of r._array to disk using numpy.memmap"""
         pass
 
     def to_georaster(self):
-        return(georasters.GeoRaster(
-            self.array,
-            self.geot,
-            nodata_value=self.ndv,
-            projection=self.projection,
-            datatype=self.array.dtype
+        return(gr.GeoRaster(
+            self._array,
+            self._geot,
+            nodata_value=self._ndv,
+            projection=self._projection,
+            datatype=self._array.dtype
         ))
 
     def to_ee_image(self):
-        pass
+        _array = ee._array(self._array)
+
 
 def _generic_binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
-    self.array are reclassified as uint8(boolean) based on whether they
+    self._array are reclassified as uint8(boolean) based on whether they
     match or do not match the values of an input match array.
     """
     try:
@@ -78,11 +157,11 @@ def _generic_binary_reclassify(*args, **kwargs):
     except IndexError:
         IndexError("invalid invert= argument supplied by user")
     return numpy.reshape(
-        numpy.array(
-            numpy.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
+        numpy._array(
+            numpy.in1d(_raster._array, _match, assume_unique=True, invert=_invert),
             dtype='uint8'
         ),
-        _raster.array.shape
+        _raster._array.shape
     )
 
 
@@ -133,18 +212,18 @@ def _generic_merge(*args, **kwargs):
     """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
     _rasters = kwargs.get('rasters', args[0]) if kwargs.get('raster', args[0]) is not None else None
     try:
-        return georasters.merge(_rasters)
+        return gr.merge(_rasters)
     except Exception as e:
         raise e
 
 
 def _generic_split(*args, **kwargs):
-    """Stump for numpy.array_split. splits an input array into n (mostly) equal segments,
+    """Stump for numpy._array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation."""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _n = kwargs.get('n', args[1]) if kwargs.get('n', args[1]) is not None else None
-    return numpy.array_split(
-        numpy.array(_raster.array,dtype=str(_raster.array.data.dtype)),
+    return numpy._array_split(
+        numpy._array(_raster._array,dtype=str(_raster._array.data.dtype)),
         _n
     )
 
@@ -157,11 +236,11 @@ def _ram_sanity_check(*args, **kwargs):
     _asGigabytes = kwargs.get('asGigabytes', args[3]) if kwargs.get('asGigabytes', args[3]) is not None else True
     try:
         if _dtype is None:
-            _dtype = _raster.array.dtype
+            _dtype = _raster._array.dtype
     except Exception as e:
         raise e
     return _get_free_ram(asGigabytes=_asGigabytes) - _est_ram_usage(
-        _raster.array.shape,
+        _raster._array.shape,
         dtype=_dtype,
         nOperations=_nOperation,
         asGigabytes=_asGigabytes
@@ -182,8 +261,8 @@ def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
     arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
     """
     try:
-        dtype = dim.array.dtype
-        dim = dim.array.shape
+        dtype = dim._array.dtype
+        dim = dim._array.shape
     except AttributeError as e:
         if 'raster' in str(e):
             try:  # sometimes est_ram_usage will be expected to accept a raw numpy array, rather than a Raster
