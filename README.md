@@ -1,5 +1,5 @@
 ### Beatbox
-Simple Python 3 wrapper interface for GDAL, GeoRasters, Shapely, and GeoPandas. Beatbox is designed to be a portable interface for working with large spatial datasets on cloud platforms like AWS and Google App Engine. You install it's standard dependencies with anaconda (or miniconda) and/or pip in seconds and produce datasets that can be integrated into distributed computing workflows. 
+Simple Python wrapper interface for GDAL, GeoRasters, Shapely, and GeoPandas. Beatbox is designed to be a portable interface for working with large spatial datasets on cloud platforms like AWS and Google App Engine. You install it's standard dependencies with anaconda (or miniconda) and/or pip in seconds and produce datasets that can be integrated into distributed computing workflows. 
 
 *If you are not a collaborator and just happened onto this repository while looking for ways to crunch geospatial data with Python, **this is not your tool**. For vector data, consider [GeoPandas](https://developers.google.com/earth-engine/python_install_manual). For raster data, consider [GeoRasters](https://github.com/ozak/georasters).*
 
