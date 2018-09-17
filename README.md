@@ -19,8 +19,7 @@ conda install pyCrypto GDAL numpy pandas fiona shapely geopandas scikit-learn
 pip install google-api-python-client
 pip install earthengine-api
 
-pip uninstall Beatbox
-pip install git+git://github.com/PLJV/Beatbox.git
+pip install --upgrade git+git://github.com/PLJV/Beatbox.git
 ```
 
 ### Quickstart
