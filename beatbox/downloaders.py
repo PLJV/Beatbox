@@ -18,8 +18,10 @@ import logging
 
 from bs4 import BeautifulSoup as bs
 
-_CDL_BASE_URL: str = "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/"
-_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps-and-data/maps-of-probable-playas/"
+_CDL_BASE_URL: str = "https://www.nass.usda.gov/Research_and_Science/Cropland/\
+Release/"
+_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps\
+-and-data/maps-of-probable-playas/"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -110,9 +112,9 @@ class HttpDownload:
 
 class Nass(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(url=_CDL_BASE_URL, pattern=".zip")
 
 
 class ProbablePlayas(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern=".zip")
