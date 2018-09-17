@@ -18,7 +18,7 @@ import logging
 
 from bs4 import BeautifulSoup as bs
 
-_CDL_BASE_URL: str = "https://www.nass.usda.gov/Research_and_Science/Cropland/\
+_CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/\
 Release/"
 _PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps\
 -and-data/maps-of-probable-playas/"
@@ -41,37 +41,59 @@ class HttpDownload:
         self._html = None
         self._soup = None
         self._files = []
-        try:
-            self.url = kwargs.get('url', args[0])
-        except IndexError:
-            pass # allow instantiation without specifying a default URL
-        try:
-            self._re_pattern = kwargs.get('pattern', args[1])
+
+        if kwargs.get("url", False):
+            self.url = kwargs.get("url")
+        else:
+            try:
+                self.url = args[0]
+            # allow instantiation without specifying a default URL
+            except IndexError:
+                pass
+
+        if kwargs.get("pattern", False):
+            self._re_pattern = kwargs.get("pattern")
+        else:
+            try:
+                self._re_pattern = args[1]
+            # allow instantiation without specifying an re search filter
+            except IndexError:
+                pass
+        # if we have URL data to work with, validate it
+        # to make sure scrape() has something to work with
+        if self.url:
             if not self._validate_url():
-                raise ValueError("Could not identify any target files at the "
-                                 "URL provided using your search pattern.")
-        except IndexError:
-            pass  # allow instantiation without specifying an re search filter
+                raise ValueError("Could not identify any target files at "
+                                 "the URL provided using your search "
+                                 "pattern.")
 
     def _validate_url(self, *args, **kwargs):
         """
-
+        Fetch a BeautifulSoup object passed by the user and then check the
+        soup for a regular expression search string
         :param args:
         :param kwargs:
-        :return:
+        :return: True on found, False on not found
         """
         _pattern = self._re_pattern
-        try:
-            # if the user passed a filename pattern argument, use it,
-            # otherwise just use the default pattern specified
-            # by _re_pattern
-            _pattern = self._re_pattern = kwargs.get('pattern', args[0])
-        except IndexError:
-            pass
+        # if the user passed a filename pattern argument, use it,
+        # otherwise just use the default pattern specified
+        # by _re_pattern
+        if kwargs.get('pattern', False):
+            _pattern = self._re_pattern = kwargs.get('pattern')
+        else:
+            try:
+                _pattern = self._re_pattern = args[0]
+            except IndexError:
+                pass
+        # dump HTTP server response as xml text
         self._soup = bs(self._html.text, "lxml")
+        # iterate over each row looking for an href matching our
+        # re search pattern
         for i, a in enumerate(self._soup.findAll("a")):
-            if re.search(string=str(a), pattern="a href.*" + _pattern):
+            if re.search(string=str(a), pattern="href.*." + _pattern):
                 return True
+        # default action if we didn't find our re search string
         return False
 
     @property
@@ -84,15 +106,24 @@ class HttpDownload:
             self._url = args[0]
         except IndexError:
             raise IndexError("url assignment requires a single str argument")
-        self._html = requests.get(self._url)
+        self._html = requests.get(self.url, verify=False)
 
     def scrape(self, *args, **kwargs):
-        try:
-            _dir_search_str = kwargs.get('search_str', args[0])
-        except IndexError:
-            _dir_search_str = None
+        """
+
+        """
+        # if the user provided an extra RE search string to use,
+        # then append it to our terminal pattern. Otherwise, just
+        # use the terminal pattern
+        if kwargs.get('search_str', False):
+            _re_search_str = kwargs.get('search_str') + ".*." + test._re_pattern
+        else:
+            try:
+                _re_search_str = args[0] + ".*." + test._re_pattern
+            except IndexError:
+                _re_search_str = test._re_pattern
         for i, a in enumerate(self._soup.findAll("a")):
-            if re.search(string=str(a), pattern=_dir_search_str):
+            if re.search(string=str(a), pattern=_re_search_str):
                 self._files.append(
                     # by default, use the filename specified by our a hrefs
                     str(self._soup.select("a")[i].attrs['href'])
@@ -112,9 +143,9 @@ class HttpDownload:
 
 class Nass(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_CDL_BASE_URL, pattern=".zip")
+        super().__init__(url=_CDL_BASE_URL, pattern="zip")
 
 
 class ProbablePlayas(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern=".zip")
+        super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
