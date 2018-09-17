@@ -110,7 +110,10 @@ class HttpDownload:
 
     def scrape(self, *args, **kwargs):
         """
-
+        :param args[0]: Regular Expression search string to look for in our
+        HTTP server response. Note that this is in addition to our trailing
+        search string already provided during initialization.
+        :param search_str: alternative specification for args[0] (above)
         """
         # if the user provided an extra RE search string to use,
         # then append it to our terminal pattern. Otherwise, just
