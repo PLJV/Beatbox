@@ -22,6 +22,8 @@ _CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
                      "Release/"
 _PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps" \
                                  "-and-data/maps-of-probable-playas/"
+_FAA_DOF_URL: str = "https://www.faa.gov/air_traffic/flight_info/aeronav/digi" \
+                    "tal_products/dof/"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -125,20 +127,23 @@ class HttpDownload:
         # if the user provided an extra RE search string to use,
         # then append it to our terminal pattern. Otherwise, just
         # use the terminal pattern
+        self._files = [] # reset our files list
         if kwargs.get('search_str', False):
-            _re_search_str = kwargs.get('search_str') + ".*." + test._re_pattern
+            _re_search_str = kwargs.get('search_str') + ".*." + self._re_pattern
         else:
             try:
-                _re_search_str = args[0] + ".*." + test._re_pattern
+                _re_search_str = args[0] + ".*." + self._re_pattern
             except IndexError:
-                _re_search_str = test._re_pattern
+                _re_search_str = self._re_pattern
+        # iterate over our soup and store matching href's
+        # in the files list
         for i, a in enumerate(self._soup.findAll("a")):
             if re.search(string=str(a), pattern=_re_search_str):
                 self._files.append(
                     # by default, use the filename specified by our a hrefs
                     str(self._soup.select("a")[i].attrs['href'])
                 )
-        if not self._files:
+        if self._files is None:
             raise ValueError("could not parse any target files from the URL "
                              "provided: check the search_str argument")
 
@@ -161,3 +166,34 @@ class Nass(HttpDownload):
 class ProbablePlayas(HttpDownload):
     def __init__(self, *args, **kwargs):
         super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
+
+
+class FaaWindTurbines(HttpDownload):
+    def __init__(self, *args, **kwargs):
+        super().__init__(url=_FAA_DOF_URL, pattern="zip")
+        # args[0] / date_filter=
+        try:
+            _date_filter = args[0]
+        except IndexError:
+            _date_filter = kwargs.get("date_filter")
+            if _date_filter is None:
+                _date_filter = self.parse_most_recent_file_from_dof_strings()
+            pass
+        # scrape using our date filter string
+        self.scrape(search_str=_date_filter)
+
+    def parse_most_recent_file_from_dof_strings(self, search_str="DOF"):
+        """
+        Accepts a list of strings as a single argument. Will parse
+        the strings for their date codes and return the most recent
+        code as a string literal that we can use for parsing
+        :param search_str: second search string used to filter hrefs in our soup
+        :return: most recent date stamp as a string
+        """
+        # There are a number of zip files published at the FAA DOF URL
+        # at any time that we can use
+        self.scrape(search_str=search_str)
+        _date_strings = self.files.split("/")[-1]
+        _date_strings = _date_strings.split("_")[-1]
+        _date_strings = int(_date_strings.split("[.]")[:-1])
+        return str(max(_date_strings))
