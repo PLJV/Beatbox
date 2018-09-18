@@ -18,10 +18,10 @@ import logging
 
 from bs4 import BeautifulSoup as bs
 
-_CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/\
-Release/"
-_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps\
--and-data/maps-of-probable-playas/"
+_CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
+                     "Release/"
+_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps" \
+                                 "-and-data/maps-of-probable-playas/"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,24 +41,22 @@ class HttpDownload:
         self._html = None
         self._soup = None
         self._files = []
-        # url=
-        if kwargs.get("url", False):
-            self.url = kwargs.get("url")
-        else:
-            try:
-                self.url = args[0]
-            # allow instantiation without specifying a default URL
-            except IndexError:
-                pass
-        # pattern=
-        if kwargs.get("pattern", False):
-            self._re_pattern = kwargs.get("pattern")
-        else:
-            try:
-                self._re_pattern = args[1]
+        # args[0] / url=
+        try:
+            self.url = args[0]
+        except IndexError:
+            if kwargs.get("url"):
+                self.url = kwargs.get("url")
+            # allow instantiation without specifying a url
+            pass
+        # args[1] / pattern=
+        try:
+            self._re_pattern = args[1]
+        except IndexError:
+            if kwargs.get("pattern", False):
+                self._re_pattern = kwargs.get("pattern")
             # allow instantiation without specifying an re search filter
-            except IndexError:
-                pass
+            pass
         # if we have URL data to work with, validate it
         # to make sure scrape() has something to work with
         if self.url:
@@ -76,17 +74,17 @@ class HttpDownload:
         :return: True on found, False on not found
         """
         _pattern = self._re_pattern
-        # pattern =
+        # args[0] / pattern =
         # if the user passed a filename pattern argument, use it,
         # otherwise just use the default pattern specified
         # by _re_pattern
-        if kwargs.get('pattern', False):
-            _pattern = self._re_pattern = kwargs.get('pattern')
-        else:
-            try:
-                _pattern = self._re_pattern = args[0]
-            except IndexError:
-                pass
+        try:
+            self._re_pattern = _pattern = args[0]
+        except IndexError:
+            if kwargs.get('pattern'):
+                self._re_pattern = _pattern = kwargs.get('pattern')
+            # allow appending nothing to our search string
+            pass
         # dump HTTP server response as xml text
         self._soup = bs(self._html.text, "lxml")
         # iterate over each row looking for an href matching our
