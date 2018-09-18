@@ -10,6 +10,7 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
 
+import sys, os
 import fiona
 import geopandas as gp
 import json
@@ -53,12 +54,20 @@ class Vector:
         self._schema = []
         self._crs = []
         self._crs_wkt = []
-        # args[0] / filename=
+        # args[0] / filename= / json=
         try:
-            self.filename = args[0]
+            # assume it's a filename
+            if os.path.exists(args[0]):
+                self.filename = args[0]
+            # if our read fails, check
+            # to see if it's JSON
+            else:
+                self.read(string=kwargs.get('json'))
         except IndexError:
             if kwargs.get('filename'):
                 self.filename = kwargs.get('filename')
+            elif kwargs.get('json'):
+                self.read(string=kwargs.get('json'))
             # allow empty specification
             pass
         except Exception as e:
@@ -170,36 +179,52 @@ class Vector:
         return [shape(ft['geometry']) for ft in list(geometries)]
         
     def read(self, *args, **kwargs):
-        """Short-hand wrapper for fiona.open() that assigns class variables for \
+        """Short-hand wrapper for fiona/gp that assigns class variables for \
          CRS, geometry, and schema.
 
         Keyword arguments:
         filename= the full path filename to a vector dataset (typically a .shp file)
+        string= json string that we should assign our geometries from
 
         Positional arguments:
-        1st = if no filename keyword argument is used, treat the first positional argument\
-        as the filename
+        1st = either a full path to a file or a json string object
         """
+        # sandbox for potential JSON data
+        _json = None
+        # args[0] / -filename / -string
         try:
-            self._filename = args[0]
+            if os.path.exists(args[0]):
+                self._filename = args[0]
+            else:
+                if _isjson(args[0]):
+                    _json = json.loads(args[0])
         except IndexError:
             if kwargs.get('filename'):
-                self._filename = kwargs.get('filename')
+                if os.path.exists(kwargs.get('filename')):
+                    self._filename = kwargs.get('filename')
+                else:
+                    raise FileNotFoundError("invalid filename= argument supplied by user")
+            elif kwargs.get('string'):
+                if _isjson(args[0]):
+                    _json = json.loads(args[0])
             # perhaps we explicitly set filename elsewhere?
             pass
-        except Exception as e:
-            raise e
+        # if this is a json string, parse out our geometry and attribute
+        # data accordingly
+        if _json:
+            pass
+        # otherwise, assume this is a file and parse out or data using Fiona
+        else:
+            _shape_collection = fiona.open(self.filename)
 
-        shape_collection = fiona.open(self._filename)
-
-        try:
-            self._crs = shape_collection.crs
-            self._crs_wkt = shape_collection.crs_wkt
-            # parse our dict of geometries into an actual shapely list
-            self._geometries = self._geometries_to_shapely_list(shape_collection)
-            self._schema = shape_collection.schema
-        except Exception as e:
-            raise e
+            try:
+                self._crs = _shape_collection.crs
+                self._crs_wkt = _shape_collection.crs_wkt
+                # parse our dict of geometries into an actual shapely list
+                self._geometries = self._geometries_to_shapely_list(_shape_collection)
+                self._schema = _shape_collection.schema
+            except Exception as e:
+                raise e
 
     def write(self, *args, **kwargs):
         """ wrapper for fiona.open that will write in-class geometry data to disk
@@ -291,6 +316,23 @@ class Vector:
 
         return feature_collection
 
+
+def _isjson(*args, **kwargs):
+    try:
+        _string = args[0]
+    except IndexError:
+        _string = kwargs.get("string")
+        if _string is None:
+            raise IndexError("invalid string= argument passed by user")
+    # sneakily use json.loads() to test whether this is
+    # a valid json string
+    try:
+        _string = json.loads(_string)
+        _string = True
+    except Exception:
+        _string = False
+
+    return _string
 
 def intersection(vector=None, *args, **kwargs):
     """ Returns the intersection of our focal Vector class with another Vector class """
