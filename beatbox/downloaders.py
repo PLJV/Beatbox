@@ -107,6 +107,14 @@ class HttpDownload:
             raise IndexError("url assignment requires a single str argument")
         self._html = requests.get(self.url, verify=False)
 
+    @property
+    def files(self):
+        return self._files
+
+    @files.setter
+    def files(self, *args):
+        self._files = args[0]
+
     def scrape(self, *args, **kwargs):
         """
         :param args[0]: Regular Expression search string to look for in our
@@ -141,6 +149,8 @@ class HttpDownload:
             if not os.path.exists(self._files[i].split("/")[-1]):
                 print(i+1, end="")
                 urllib.request.urlretrieve(f, self._files[i].split("/")[-1])
+        # return our list of retrieved filenames to the user
+        return(self.files)
 
 
 class Nass(HttpDownload):
