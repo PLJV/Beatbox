@@ -14,55 +14,186 @@ import os
 import re
 import requests
 import urllib
+import logging
 
 from bs4 import BeautifulSoup as bs
 
-_BASE = "https://www.nass.usda.gov/Research_and_Science/Cropland/Release/"
+_CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
+                     "Release/"
+_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps" \
+                                 "-and-data/maps-of-probable-playas/"
+_FAA_DOF_URL: str = "https://www.faa.gov/air_traffic/flight_info/aeronav/digi" \
+                    "tal_products/dof/"
 
-class Nass:
-    '''
-    Nass baseclass
-    Handler for NASS web-scraping and downloading NASS imagery
-    '''
-    def __init__(self, **kargs):
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+class HttpDownload:
+    def __init__(self, *args, **kwargs):
+        """
+        Default web scraping interface for BeautifulSoup that will scrape
+        a user-specified URL for A HREF tags and then download files that match
+        some filename pattern using regular expressions (e.g., [.]zip).
+        :param args:
+        :param kwargs:
+        """
+        self._re_pattern = None
         self._url = None
-        self._file = None
-        self._bs = None
-        self._zips = []
-        for i, arg in enumerate(kargs):
-            if arg == "url":
-                self.base_url(kargs[arg])
-                if not self._validate_url():
-                    raise ValueError('could not identify any zip files at the URL provided.')
+        self._html = None
+        self._soup = None
+        self._files = []
+        # args[0] / url=
+        try:
+            self.url = args[0]
+        except IndexError:
+            if kwargs.get("url"):
+                self.url = kwargs.get("url")
+            # allow instantiation without specifying a url
+            pass
+        # args[1] / pattern=
+        try:
+            self._re_pattern = args[1]
+        except IndexError:
+            if kwargs.get("pattern", False):
+                self._re_pattern = kwargs.get("pattern")
+            # allow instantiation without specifying an re search filter
+            pass
+        # if we have URL data to work with, validate it
+        # to make sure scrape() has something to work with
+        if self.url:
+            if not self._validate_url():
+                raise ValueError("Could not identify any target files at "
+                                 "the URL provided using your search "
+                                 "pattern.")
 
-    def _validate_url(self):
-        self._bs = bs(self._file.text, "lxml")
-        for i, a in enumerate(self._bs.findAll("a")):
-            if re.search(string=str(a), pattern="a href.*.zip"):
+    def _validate_url(self, *args, **kwargs):
+        """
+        Fetch a BeautifulSoup object passed by the user and then check the
+        soup for a regular expression search string
+        :param args:
+        :param kwargs:
+        :return: True on found, False on not found
+        """
+        _pattern = self._re_pattern
+        # args[0] / pattern =
+        # if the user passed a filename pattern argument, use it,
+        # otherwise just use the default pattern specified
+        # by _re_pattern
+        try:
+            self._re_pattern = _pattern = args[0]
+        except IndexError:
+            if kwargs.get('pattern'):
+                self._re_pattern = _pattern = kwargs.get('pattern')
+            # allow appending nothing to our search string
+            pass
+        # dump HTTP server response as xml text
+        self._soup = bs(self._html.text, "lxml")
+        # iterate over each row looking for an href matching our
+        # re search pattern
+        for i, a in enumerate(self._soup.findAll("a")):
+            if re.search(string=str(a), pattern="href.*." + _pattern):
                 return True
+        # default action if we didn't find our re search string
         return False
 
-    def base_url(self, args=_BASE):
-        self._url = args
-        self._file = requests.get(self._url)
+    @property
+    def url(self):
+        return self._url
 
-    def scrape(self, search_str="30m_cdls"):
-        for i, a in enumerate(self._bs.findAll("a")):
-            if re.search(string=str(a), pattern=search_str):
-                self._zips.append(str(self._bs.select("a")[i].attrs['href']))
-        if not self._zips:
-            raise ValueError('could not parse any zip files from the URL provided: check the search_str argument')
+    @url.setter
+    def url(self, *args):
+        try:
+            self._url = args[0]
+        except IndexError:
+            raise IndexError("url assignment requires a single str argument")
+        self._html = requests.get(self.url, verify=False)
+
+    @property
+    def files(self):
+        return self._files
+
+    @files.setter
+    def files(self, *args):
+        self._files = args[0]
+
+    def scrape(self, *args, **kwargs):
+        """
+        :param args[0]: Regular Expression search string to look for in our
+        HTTP server response. Note that this is in addition to our trailing
+        search string already provided during initialization.
+        :param search_str: alternative specification for args[0] (above)
+        """
+        # if the user provided an extra RE search string to use,
+        # then append it to our terminal pattern. Otherwise, just
+        # use the terminal pattern
+        self._files = [] # reset our files list
+        if kwargs.get('search_str', False):
+            _re_search_str = kwargs.get('search_str') + ".*." + self._re_pattern
+        else:
+            try:
+                _re_search_str = args[0] + ".*." + self._re_pattern
+            except IndexError:
+                _re_search_str = self._re_pattern
+        # iterate over our soup and store matching href's
+        # in the files list
+        for i, a in enumerate(self._soup.findAll("a")):
+            if re.search(string=str(a), pattern=_re_search_str):
+                self._files.append(
+                    # by default, use the filename specified by our a hrefs
+                    str(self._soup.select("a")[i].attrs['href'])
+                )
+        if self._files is None:
+            raise ValueError("could not parse any target files from the URL "
+                             "provided: check the search_str argument")
 
     def download(self):
-        if not self._zips:
+        if not self._files:
             self.scrape()
-        for i, f in enumerate(self._zips):
-            print("downloading zips:")
-            if not os.path.exists(self._zips[i].split("/")[-1]):
+        for i, f in enumerate(self._files):
+            if not os.path.exists(self._files[i].split("/")[-1]):
                 print(i+1, end="")
-                urllib.request.urlretrieve(f, self._zips[i].split("/")[-1])
+                urllib.request.urlretrieve(f, self._files[i].split("/")[-1])
+        # return our list of retrieved filenames to the user
+        return(self.files)
 
 
-class NassClassifiers:
-    def __init__(self):
-        self.corn = [1, 12, 13, 225, 226, 237, 241]
+class Nass(HttpDownload):
+    def __init__(self, *args, **kwargs):
+        super().__init__(url=_CDL_BASE_URL, pattern="zip")
+
+
+class ProbablePlayas(HttpDownload):
+    def __init__(self, *args, **kwargs):
+        super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
+
+
+class FaaWindTurbines(HttpDownload):
+    def __init__(self, *args, **kwargs):
+        super().__init__(url=_FAA_DOF_URL, pattern="zip")
+        # args[0] / date_filter=
+        try:
+            _date_filter = args[0]
+        except IndexError:
+            _date_filter = kwargs.get("date_filter")
+            if _date_filter is None:
+                _date_filter = self.parse_most_recent_file_from_dof_strings()
+            pass
+        # scrape using our date filter string
+        self.scrape(search_str=_date_filter)
+
+    def parse_most_recent_file_from_dof_strings(self, search_str="DOF"):
+        """
+        Accepts a list of strings as a single argument. Will parse
+        the strings for their date codes and return the most recent
+        code as a string literal that we can use for parsing
+        :param search_str: second search string used to filter hrefs in our soup
+        :return: most recent date stamp as a string
+        """
+        # There are a number of zip files published at the FAA DOF URL
+        # at any time that we can use
+        self.scrape(search_str=search_str)
+        _date_strings = self.files.split("/")[-1]
+        _date_strings = _date_strings.split("_")[-1]
+        _date_strings = int(_date_strings.split("[.]")[:-1])
+        return str(max(_date_strings))

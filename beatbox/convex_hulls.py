@@ -51,7 +51,8 @@ def _units_are_metric(*args):
     :param args:
     :return:
     """
-    return True if args[0].crs['units'].find('meter') > 0 else False
+    return True if args[0].crs['units'].find('meter')\
+                   > 0 else False
 
 def _dissolve_overlapping_geometries(*args, **kwargs):
     """
@@ -62,10 +63,15 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     :param kwargs:
     :return:
     """
+    # args[0] / buffers=
     try:
-        _buffers = kwargs.get('buffers', args[0])
+        _buffers = args[0]
     except IndexError:
-        raise IndexError("invalid buffers= argument provided by user")
+        if kwargs.get('buffers'):
+            _buffers = kwargs.get('buffers')
+        else:
+            raise IndexError("invalid buffers= "
+                             "argument provided by user")
     # force casting as a GeoDataFrame
     try:
         _buffers = gp.GeoDataFrame({
@@ -77,12 +83,13 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         else:
             raise ValueError("Invalid buffers= argument input -- failed to"
                              " make a GeoDataFrame from input provided")
-    except Exception as e:
-        raise e
+    except Exception:
+        raise Exception("Unable to cast buffers= argument as a GeoDataFrame.")
     # determine appropriate groupings for our overlapping buffers
     if _buffers.size > _ARRAY_MAX:
         split = int(round(_buffers.size / _ARRAY_MAX) + 1)
-        logger.warning("Attempting dissolve operation on a large vector dataset -- processing in %s chunks, "
+        logger.warning("Attempting dissolve operation on a large "
+                       "vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries", split)
         chunks = list(_chunks(_buffers, split))
         try:
@@ -125,14 +132,22 @@ def _attribute_by_overlap(*args, **kwargs):
     :param kwargs:
     :return:
     """
+    # args[0] / buffers=
     try:
-        _buffers = kwargs.get('buffers', args[0])
+        _buffers = args[0]
     except IndexError:
-        raise IndexError("invalid buffers= argument provided by user")
+        if kwargs.get('buffers'):
+            _buffers = kwargs.get('buffers')
+        else:
+           raise IndexError("invalid buffers= argument provided by user")
+    # args[1] / points=
     try:
-        _points = kwargs.get('points', args[1])
+        _points = args[1]
     except IndexError:
-        raise IndexError("invalid points= argument provided by user")
+        if kwargs.get('points'):
+            _points = kwargs.get('points')
+        else:
+            raise IndexError("invalid points= argument provided by user")
     # dissolve-by explode
     gdf_out = _dissolve_overlapping_geometries(_buffers)
     # return the right-sided spatial join
@@ -149,22 +164,23 @@ def convex_hull(*args, **kwargs):
     :param kwargs:
     :return: GeoDataFrame
     """
-    # try and handle our lone 'points' argument
+    try:
+        _points = args[0]
+    except IndexError:
+        if kwargs.get('points'):
+            _points = kwargs.get('points')
+        else:
+            raise IndexError("invalid points= argument provided by user")
+    # try and process our lone 'points' argument
     attr_err_msg = "points= input is invalid. try passing" \
                    " a GeoDataFrame or Vector object."
-    try:
-        _points = kwargs.get('points', args[0])
-        if isinstance(_points, gp.GeoDataFrame):
-            pass
-        elif isinstance(_points, Vector):
-            _points = _points.to_geodataframe()
-        else:
-            raise AttributeError(attr_err_msg)
-    except AttributeError:
+    if isinstance(_points, gp.GeoDataFrame):
+        pass
+    elif isinstance(_points, Vector):
+        _points = _points.to_geodataframe()
+    else:
         raise AttributeError(attr_err_msg)
-    except Exception as e:
-        raise e
-
+    # GeoPandasDataframe->convex_hull()
     return _points.convex_hull()
 
 def fuzzy_convex_hulls(*args, **kwargs):
@@ -175,15 +191,23 @@ def fuzzy_convex_hulls(*args, **kwargs):
     :param kwargs:
     :return:
     """
+    # args[0] / points=
     try:
-        _points = kwargs.get('points', args[0])
+        _points = args[0]
     except IndexError:
-        raise IndexError("invalid points= argument passed by user")
+        if kwargs.get('points'):
+            _points = kwargs.get('points')
+        else:
+            raise IndexError("invalid points= argument passed by user")
+    # args[1] / width=
     try:
-        _width = kwargs.get('width', args[1])
+        _width = args[1]
     except IndexError:
-        _width = _DEFAULT_BUFFER_WIDTH
-    # drop our points features into a gdf if they aren't already
+        if kwargs.get('width'):
+            _width = kwargs.get('width')
+        else:
+            _width = _DEFAULT_BUFFER_WIDTH
+    # cast our points features as a gdf (if they aren't already)
     if not isinstance(_points, gp.GeoDataFrame):
         _points = _points.to_geodataframe()
     # generate circular point buffers around our SpatialPoints features
@@ -194,6 +218,9 @@ def fuzzy_convex_hulls(*args, **kwargs):
         if _units_are_metric(_point_buffers):
             _point_buffers = _point_buffers.buffer(_width)
         else:
+            logger.warning("Points dataframe is projected in degrees. Will convert to meters using a"
+                           " scalar that is error-prone if you are far removed from the equator. "
+                           "Try projecting in meters.")
             _point_buffers = _point_buffers.buffer(_width / _METERS_TO_DEGREES)
     # assume AttributeErrors are due to args[0] not being a GeoPandas object
     except AttributeError as e:
@@ -202,9 +229,12 @@ def fuzzy_convex_hulls(*args, **kwargs):
         if isinstance(_points, str):
             _points = Vector(_points).to_geodataframe()
             _point_buffers = copy(_points)
-            if _point_buffers.crs['units'].find('meter') > 0:
+            if _units_are_metric(_point_buffers):
                 _point_buffers = _point_buffers.buffer(_width)
             else:
+                logger.warning("Points dataframe is projected in degrees. Will convert to meters using a"
+                               " scalar that is error-prone if you are far removed from the equator. "
+                               "Try projecting in meters.")
                 _point_buffers = _point_buffers.buffer(_width/_METERS_TO_DEGREES)
         else:
             raise e
@@ -221,6 +251,3 @@ def fuzzy_convex_hulls(*args, **kwargs):
     gdf.crs = point_clusters.crs
     return(gdf)
 
-
-if __name__ == "__main__":
-    pass

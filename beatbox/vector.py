@@ -16,6 +16,7 @@ import json
 
 from copy import copy
 from shapely.geometry import *
+from .convex_hulls import _units_are_metric
 
 import logging
 
@@ -25,6 +26,13 @@ _DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Fickle beast handlers for Earth Engine
+try:
+    import ee
+    ee.initialize()
+except ModuleNotFoundError or ImportError:
+    logger.warning("Failed to load the Earth Engine API. Continue to load but without the EE function.")
+    pass
 
 class Vector:
     def __init__(self, *args, **kwargs):
@@ -45,13 +53,19 @@ class Vector:
         self._schema = []
         self._crs = []
         self._crs_wkt = []
-
+        # args[0] / filename=
         try:
-            self.read(kwargs.get('filename', args[0]))
+            self.filename = args[0]
         except IndexError:
+            if kwargs.get('filename'):
+                self.filename = kwargs.get('filename')
+            # allow empty specification
             pass
         except Exception as e:
             raise e
+        # if the user specified a filename, try to open it
+        if self.filename:
+            self.read(self.filename)
 
     def __copy__(self):
         """ simple copy method that creates a new instance of a vector class and assigns \
@@ -124,7 +138,8 @@ class Vector:
         try:
             self._schema = args[0]
         except Exception:
-            self._schema = self._geometries.schema
+            logger.warning("invalid schema argument provided -- falling back on "
+                           "default from our shapely geometries")
 
     @property
     def geometries(self):
@@ -166,9 +181,12 @@ class Vector:
         as the filename
         """
         try:
-            self._filename = kwargs.get('filename', args[0])
-        except IndexError as e:
-            pass # perhaps we explicitly set filename elsewhere?
+            self._filename = args[0]
+        except IndexError:
+            if kwargs.get('filename'):
+                self._filename = kwargs.get('filename')
+            # perhaps we explicitly set filename elsewhere?
+            pass
         except Exception as e:
             raise e
 
@@ -191,21 +209,23 @@ class Vector:
         (Optional) Positional arguments:
         1st -- if no keyword argument was used, attempt to .read the first pos argument
         """
+        # args[0] / filename=
         try:
-            self._filename = kwargs.get('filename', args[0])
+            self._filename = args[0]
         except IndexError:
-            pass # perhaps we explicitly set our filename elsewhere
-        except Exception:
-            pass # assume we previously defined a _filename to use for our write()
-
+            if kwargs.get('filename'):
+                self._filename = kwargs.get('filename')
+            # perhaps we explicitly set our filename elsewhere
+            pass
         try:
             # call fiona to write our geometry to disk
             with fiona.open(
-                    self._filename,
-                    'w',
-                    'ESRI Shapefile',
-                    crs=self._crs,
-                    schema=self._schema) as shape:
+                self._filename,
+                'w',
+                'ESRI Shapefile',
+                crs=self._crs,
+                schema=self._schema
+            ) as shape:
                 # If there are multiple geometries, put the "for" loop here
                 shape.write({
                     'geometry': mapping(self._geometries),
@@ -234,7 +254,6 @@ class Vector:
         return _gdf
 
     def to_ee_feature_collection(self):
-        import ee 
         return ee.FeatureCollection(self.to_geojson(stringify=True))
 
     def to_geojson(self, *args, **kwargs):
@@ -245,13 +264,14 @@ class Vector:
             _as_string = False
         except Exception as e:
             raise e
-
+        # build a target dictionary
         feature_collection = {
             "type": "FeatureCollection",
             "features": [],
             "crs": []
         }
-
+        # iterate over features in our shapely geometries
+        # and build-out our feature_collection
         for feature in self._geometries:
             if isinstance(feature, dict):
                 feature_collection["features"].append(feature)
@@ -262,10 +282,10 @@ class Vector:
                     feature_collection["features"].append(json.loads(feature))
                 except Exception as e:
                     raise e
-
+        # note the CRS
         if self._crs:
             feature_collection["crs"].append(self._crs)
-
+        # do we want this stringified?
         if _as_string:
             feature_collection = json.dumps(feature_collection)
 
@@ -294,17 +314,29 @@ def buffer(*args, **kwargs):
     1st= if no width keyword is provided, the first positional argument is treated as the \
     width parameter
     """
+    # args[0] / vector=
     try:
-        _vector_geom = kwargs.get('vector', args[0])
+        _vector_geom = args[0]
     except IndexError:
-        raise IndexError("invalid vector= argument passed by user")
+        if kwargs.get('vector'):
+            _vector_geom = kwargs.get('vector')
+        else:
+            raise IndexError("invalid vector= argument passed by user")
     _vector_geom = copy(_vector_geom)  # spec out a new class to store our buffering results
+    # args[1] / width=
     try:
-        _width = kwargs.get('width', args[1])
+        _width = args[1]
     except IndexError:
-        raise IndexError("invalid width= argument passed by user")
+        if kwargs.get('width'):
+            _width = kwargs.get('width')
+        else:
+            raise IndexError("invalid width= argument passed by user")
     # check and see if we are working in unit meters or degrees
-    if _vector_geom._crs_wkt.find('Degree') > 0:
+    if not _units_are_metric(_vector_geom):
+        logger.warning("vector= data is projected in degrees. Will "
+                       "convert to meters using a scalar that is error-prone "
+                       "if you are far removed from the equator. Try projecting "
+                       "source data in units of meters.")
         _width = _DEGREES_TO_METERS * _width
     # build a schema for our buffering operations
     target_schema = _vector_geom.schema
@@ -313,6 +345,6 @@ def buffer(*args, **kwargs):
     # a MultiPolygon geometry
     _vector_geom.schema = target_schema
     _vector_geom.geometries = MultiPolygon(
-        [shape(ft['geometry']).buffer(_width)
-         for ft in _vector_geom.geometries])
+        [shape(ft['geometry']).buffer(_width) for ft in _vector_geom.geometries]
+    )
     return _vector_geom
