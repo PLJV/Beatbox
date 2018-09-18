@@ -41,7 +41,7 @@ class HttpDownload:
         self._html = None
         self._soup = None
         self._files = []
-
+        # url=
         if kwargs.get("url", False):
             self.url = kwargs.get("url")
         else:
@@ -50,7 +50,7 @@ class HttpDownload:
             # allow instantiation without specifying a default URL
             except IndexError:
                 pass
-
+        # pattern=
         if kwargs.get("pattern", False):
             self._re_pattern = kwargs.get("pattern")
         else:
@@ -76,6 +76,7 @@ class HttpDownload:
         :return: True on found, False on not found
         """
         _pattern = self._re_pattern
+        # pattern =
         # if the user passed a filename pattern argument, use it,
         # otherwise just use the default pattern specified
         # by _re_pattern
