@@ -10,7 +10,7 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
 
-import sys, os
+import os
 import fiona
 import geopandas as gp
 import json
@@ -35,7 +35,6 @@ except ModuleNotFoundError or ImportError:
     logger.warning("Failed to load the Earth Engine API. "
                    "Will continue to load but without "
                    "the EE functionality.")
-    pass
 
 
 class Vector:
@@ -45,10 +44,12 @@ class Vector:
         spatial modifications on vector datasets
 
         Keyword arguments:
-        filename= the full path filename to a vector dataset (typically a .shp file)
+        filename= the full path filename to a vector
+        dataset (typically a .shp file)
         json=jsonified text
         Positional arguments:
-        1st= if no filname keyword argument was used, attempt to read the first positional argument
+        1st= if no filname keyword argument was used,
+        attempt to read the first positional argument
         """
         self._geometries = []
         self._attributes = {}
@@ -63,7 +64,7 @@ class Vector:
                 self.filename = args[0]
             # if our read fails, check
             # to see if it's JSON
-            elif _isjson(args[0]):
+            elif is_json(args[0]):
                 self.read(string=args[0])
         except IndexError:
             if kwargs.get('filename'):
@@ -94,7 +95,7 @@ class Vector:
     def __deepcopy__(self, memodict={}):
         """ copy already is a deep copy """
         return self.__copy__()
-    
+
     @property
     def filename(self):
         """ decorated getter for our filename """
@@ -105,8 +106,8 @@ class Vector:
         """ decorated setter for our filename """
         try:
             self._filename = args[0]
-        except Exception as e:
-            raise e
+        except Exception:
+            raise Exception("General error occured while trying to assign filename")
 
     @property
     def crs(self):
@@ -123,9 +124,9 @@ class Vector:
         1st = first positional argument is used to assign our class CRS value
         """
         try:
-          self._crs = args[0]
-        except Exception as e:
-          raise e
+            self._crs = args[0]
+        except Exception:
+            raise Exception("General error occurred while trying to assign CRS")
 
     @property
     def schema(self):
@@ -150,7 +151,7 @@ class Vector:
     @property
     def geometries(self):
         """ decorated getter for our fiona geometries collection """
-        return(self._geometries)
+        return self._geometries
 
     @geometries.setter
     def geometries(self, *args):
@@ -164,8 +165,8 @@ class Vector:
         try:
             self.read(self._geometries)
         # did you pass an incorrect filename?
-        except OSError as e:
-            raise e
+        except OSError:
+            raise OSError("Unable to read file passed passed by user")
         # it can't be a string path -- assume is a Collection or Geometry object
         # and pass it on
         except Exception:
@@ -173,8 +174,8 @@ class Vector:
 
     def _fiona_to_shapely_geometries(self, geometries=None):
         """
-        Listcomp that will cast a list of features as a shapely geometries. This is
-        used to go from fiona -> shapely geometries
+        Cast a list of features as a shapely geometries. This is
+        used to assign internal geometries from fiona -> shapely geometries
         :param geometries:
         :return: None
         """
@@ -182,9 +183,10 @@ class Vector:
 
     def _json_string_to_shapely_geometries(self, string=None):
         """
-
-        :param string:
-        :return:
+        Accepts a json string and parses it into a shapely feature collection
+        stored internally
+        :param string: GeoJSON string containing a feature collection to parse
+        :return: None
         """
         # determine if string= is even json
         try:
@@ -212,15 +214,17 @@ class Vector:
         self._geometries = [shape(ft['geometry']) for ft in _features]
 
     def read(self, *args, **kwargs):
-        """Short-hand wrapper for fiona/gp that assigns class variables for \
-         CRS, geometry, and schema.
+        """
+        Accepts a GeoJSON string or string path to a shapefile that is read
+        and used to assign internal class variables for CRS, geometries, and schema
 
         Keyword arguments:
         filename= the full path filename to a vector dataset (typically a .shp file)
         string= json string that we should assign our geometries from
 
         Positional arguments:
-        1st = either a full path to a file or a json string object
+        1st = either a full path to a file or a geojson string object
+        :return: None
         """
         # sandbox for potential JSON data
         _json = None
@@ -228,9 +232,10 @@ class Vector:
         try:
             if os.path.exists(args[0]):
                 self._filename = args[0]
-            else:
-                if _isjson(args[0]):
+            elif is_json(args[0]):
                     _json = args[0]
+            else:
+                raise AttributeError("Unable to process first positional argument as a file or geojson string")
         except IndexError:
             if kwargs.get('filename'):
                 if os.path.exists(kwargs.get('filename')):
@@ -238,9 +243,11 @@ class Vector:
                 else:
                     raise FileNotFoundError("invalid filename= argument supplied by user")
             elif kwargs.get('string'):
-                if _isjson(kwargs.get('string')):
+                if is_json(kwargs.get('string')):
                     _json = kwargs.get('string')
-            # perhaps we explicitly set filename elsewhere?
+            # allow no arguments exception -- that we explicitly set
+            # filename elsewhere and we are calling .read() without
+            # arguments
             pass
         # if this is a json string, parse out our geometry and attribute
         # data accordingly
@@ -268,31 +275,41 @@ class Vector:
         """
         # args[0] / filename=
         try:
-            self._filename = args[0]
+            self.filename = args[0]
         except IndexError:
             if kwargs.get('filename'):
-                self._filename = kwargs.get('filename')
+                self.filename = kwargs.get('filename')
             # perhaps we explicitly set our filename elsewhere
+            pass
+        # args[1] / type=
+        _type = 'ESRI Shapefile' # by default, write as a shapefile
+        try:
+            _type = args[1]
+        except IndexError:
+            if kwargs.get('type'):
+                _type = kwargs.get('type')
             pass
         try:
             # call fiona to write our geometry to disk
             with fiona.open(
-                self._filename,
+                self.filename,
                 'w',
-                'ESRI Shapefile',
-                crs=self._crs,
-                schema=self._schema
+                _type,
+                crs=self.crs,
+                schema=self.schema
             ) as shape:
                 # If there are multiple geometries, put the "for" loop here
                 shape.write({
-                    'geometry': mapping(self._geometries),
+                    'geometry': mapping(self.geometries),
                     'properties': {'id': 123},
                 })
-        except Exception as e:
-            raise e
+        except Exception:
+            raise Exception("General error encountered trying "
+                            "to call fiona.open on the input data. "
+                            "Is the file not a shapefile?")
 
-    def to_collection(self):
-        """ return a collection of our geometry data """
+    def to_shapely_collection(self):
+        """ return a shapely collection of our geometry data """
         return self.geometries
 
     def to_geodataframe(self):
@@ -314,6 +331,12 @@ class Vector:
         return ee.FeatureCollection(self.to_geojson(stringify=True))
 
     def to_geojson(self, *args, **kwargs):
+        """
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
         _as_string = False
         try:
             _as_string = True if kwargs.get("stringify", args) else False
@@ -349,7 +372,7 @@ class Vector:
         return feature_collection
 
 
-def _isjson(*args, **kwargs):
+def is_json(*args, **kwargs):
     try:
         _string = args[0]
     except IndexError:
