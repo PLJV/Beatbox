@@ -95,7 +95,7 @@ class Vector:
         return _vector_geom
 
     def __deepcopy__(self, memodict={}):
-        """ a deep copy is a shallow copy is a deep copy """
+        """ copy already is a deep copy """
         return self.__copy__()
     
     @property
@@ -172,12 +172,47 @@ class Vector:
         # it can't be a string path -- assume is a Collection or Geometry object
         # and pass it on
         except Exception:
-            self._geometries = self._geometries_to_shapely_list(self._geometries)
-            
-    @staticmethod        
-    def _geometries_to_shapely_list(geometries=None):
-        return [shape(ft['geometry']) for ft in list(geometries)]
-        
+            self._fiona_to_shapely_geometries(geometries=self._geometries)
+
+    def _fiona_to_shapely_geometries(self, geometries=None):
+        """
+        Listcomp that will cast a list of features as a shapely geometries. This is
+        used to go from fiona -> shapely geometries
+        :param geometries:
+        :return: None
+        """
+        self._geometries = [shape(ft['geometry']) for ft in list(geometries)]
+
+    def _json_string_to_shapely_geometries(self, string=None):
+        """
+
+        :param string:
+        :return:
+        """
+        # determine if string= is even json
+        try:
+            _json = json.loads(string)
+        except json.JSONDecodeError:
+            raise json.JSONDecodeError("unable to process string= "
+                                       "argument... is this not a "
+                                       "json string?")
+        # determine if string= is geojson
+        try:
+            _type = _json['type']
+            _features = json['features']
+        except KeyError:
+            raise KeyError("Unable to parse features from json. "
+                           "Is this not a GeoJSON string?")
+        try:
+            self._crs = _json['crs']
+        except KeyError:
+            # nobody uses CRS with GeoJSON -- but it's default
+            # projection is always(?) EPSG:4326
+            self._crs = {'crs': 'epsg:4326'}
+        # listcomp : iterate over our features and convert them
+        # to shape geometries
+        self._geometries = [shape(ft['geometry']) for ft in _features]
+
     def read(self, *args, **kwargs):
         """Short-hand wrapper for fiona/gp that assigns class variables for \
          CRS, geometry, and schema.
@@ -216,12 +251,11 @@ class Vector:
         # otherwise, assume this is a file and parse out or data using Fiona
         else:
             _shape_collection = fiona.open(self.filename)
-
             try:
                 self._crs = _shape_collection.crs
                 self._crs_wkt = _shape_collection.crs_wkt
                 # parse our dict of geometries into an actual shapely list
-                self._geometries = self._geometries_to_shapely_list(_shape_collection)
+                self._fiona_to_shapely_geometries(geometries=_shape_collection)
                 self._schema = _shape_collection.schema
             except Exception as e:
                 raise e
@@ -329,8 +363,11 @@ def _isjson(*args, **kwargs):
     try:
         _string = json.loads(_string)
         _string = True
-    except Exception:
+    except json.JSONDecodeError:
         _string = False
+    except Exception:
+        raise Exception("General exception caught trying to parse string="
+                        " input. This shouldn't happen.")
 
     return _string
 
