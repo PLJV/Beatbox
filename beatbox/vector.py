@@ -43,11 +43,10 @@ class Vector:
 
         Keyword arguments:
         filename= the full path filename to a vector dataset (typically a .shp file)
-
+        json=jsonified text
         Positional arguments:
         1st= if no filname keyword argument was used, attempt to read the first positional argument
         """
-
         self._geometries = []
         self._attributes = {}
         self._filename = []
@@ -61,15 +60,14 @@ class Vector:
                 self.filename = args[0]
             # if our read fails, check
             # to see if it's JSON
-            else:
+            elif _isjson(args[0]):
                 self.read(string=kwargs.get('json'))
         except IndexError:
             if kwargs.get('filename'):
                 self.filename = kwargs.get('filename')
             elif kwargs.get('json'):
                 self.read(string=kwargs.get('json'))
-            # allow empty specification
-            pass
+            pass # allow empty specification
         except Exception as e:
             raise e
         # if the user specified a filename, try to open it
@@ -79,10 +77,6 @@ class Vector:
     def __copy__(self):
         """ simple copy method that creates a new instance of a vector class and assigns \
         default attributes from the parent instance
-
-        Keyword arguments: None
-
-        Positional arguments: None
         """
         _vector_geom = Vector()
         _vector_geom._geometries = self._geometries
@@ -247,7 +241,7 @@ class Vector:
         # if this is a json string, parse out our geometry and attribute
         # data accordingly
         if _json:
-            pass
+            self._json_string_to_shapely_geometries(geometries=_json)
         # otherwise, assume this is a file and parse out or data using Fiona
         else:
             _shape_collection = fiona.open(self.filename)
