@@ -32,8 +32,11 @@ try:
     import ee
     ee.initialize()
 except ModuleNotFoundError or ImportError:
-    logger.warning("Failed to load the Earth Engine API. Continue to load but without the EE function.")
+    logger.warning("Failed to load the Earth Engine API. "
+                   "Will continue to load but without "
+                   "the EE functionality.")
     pass
+
 
 class Vector:
     def __init__(self, *args, **kwargs):

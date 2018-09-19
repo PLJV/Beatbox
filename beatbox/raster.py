@@ -18,7 +18,9 @@ try:
     import ee
     ee.initialize()
 except ModuleNotFoundError or ImportError:
-    logger.warning("Failed to load the Earth Engine API. Continue to load but without the EE function.")
+    logger.warning("Failed to load the Earth Engine API. "
+                   "Will continue to load but without the "
+                   "EE functionality.")
     pass
 
 _DEFAULT_NA_VALUE: int = -9999

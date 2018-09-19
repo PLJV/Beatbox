@@ -16,7 +16,7 @@ import geopandas as gp
 from copy import copy
 from scipy.sparse.csgraph import connected_components
 
-from .vector import Vector
+from .vector import *
 
 _DEFAULT_BUFFER_WIDTH: int = 1000  # default width (in meters) of a geometry for various buffer operations
 _METERS_TO_DEGREES: int = 111000
