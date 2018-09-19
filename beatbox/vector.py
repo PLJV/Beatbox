@@ -64,7 +64,7 @@ class Vector:
             # if our read fails, check
             # to see if it's JSON
             elif _isjson(args[0]):
-                self.read(string=kwargs.get('json'))
+                self.read(string=args[0])
         except IndexError:
             if kwargs.get('filename'):
                 self.filename = kwargs.get('filename')
@@ -190,13 +190,12 @@ class Vector:
         try:
             _json = json.loads(string)
         except json.JSONDecodeError:
-            raise json.JSONDecodeError("unable to process string= "
-                                       "argument... is this not a "
-                                       "json string?")
+            raise Exception("unable to process string= "
+                            "argument... is this not a json string?")
         # determine if string= is geojson
         try:
             _type = _json['type']
-            _features = json['features']
+            _features = _json['features']
         except KeyError:
             raise KeyError("Unable to parse features from json. "
                            "Is this not a GeoJSON string?")
@@ -205,6 +204,8 @@ class Vector:
         except KeyError:
             # nobody uses CRS with GeoJSON -- but it's default
             # projection is always(?) EPSG:4326
+            logger.warning("no crs property defined for json input "
+                           "-- assuming EPSG:4326")
             self._crs = {'crs': 'epsg:4326'}
         # listcomp : iterate over our features and convert them
         # to shape geometries
@@ -229,7 +230,7 @@ class Vector:
                 self._filename = args[0]
             else:
                 if _isjson(args[0]):
-                    _json = json.loads(args[0])
+                    _json = args[0]
         except IndexError:
             if kwargs.get('filename'):
                 if os.path.exists(kwargs.get('filename')):
@@ -237,14 +238,14 @@ class Vector:
                 else:
                     raise FileNotFoundError("invalid filename= argument supplied by user")
             elif kwargs.get('string'):
-                if _isjson(args[0]):
-                    _json = json.loads(args[0])
+                if _isjson(kwargs.get('string')):
+                    _json = kwargs.get('string')
             # perhaps we explicitly set filename elsewhere?
             pass
         # if this is a json string, parse out our geometry and attribute
         # data accordingly
         if _json:
-            self._json_string_to_shapely_geometries(geometries=_json)
+            self._json_string_to_shapely_geometries(string=_json)
         # otherwise, assume this is a file and parse out or data using Fiona
         else:
             _shape_collection = fiona.open(self.filename)
