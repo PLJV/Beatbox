@@ -1,14 +1,14 @@
-#!/usr/bin/env python
-"""
+#!/usr/bin/env python3
+
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
-__credits__ = ["Kyle Taylor", "Alex Daniels"]
+__credits__ = ["Kyle Taylor"]
 __license__ = "GPL"
 __version__ = "3"
 __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
-"""
+
 
 import os
 import re
