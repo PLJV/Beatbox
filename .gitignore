@@ -107,5 +107,6 @@ venv.bak/
 # Pycharm IDE crap
 .idea/
 
-# Kdevelop IDE crap
+# KDE IDE crap
 *.kde*
+*.kate-swp
