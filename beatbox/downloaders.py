@@ -15,6 +15,7 @@ import re
 import requests
 import urllib
 import logging
+import ntpath
 
 from bs4 import BeautifulSoup as bs
 
@@ -148,14 +149,14 @@ class HttpDownload:
                              "provided: check the search_str argument")
 
     def download(self):
-        if not self._files:
+        if not self.files:
             self.scrape()
-        for i, f in enumerate(self._files):
-            if not os.path.exists(self._files[i].split("/")[-1]):
-                print(i+1, end="")
-                urllib.request.urlretrieve(f, self._files[i].split("/")[-1])
+        for i, f in enumerate(self.files):
+            self.files[i] = self.files[i].split("/")[-1]
+            if not os.path.exists(self.files[i]):
+                urllib.request.urlretrieve(f, self.files[i])
         # return our list of retrieved filenames to the user
-        return(self.files)
+        return self.files
 
 
 class Nass(HttpDownload):
@@ -177,7 +178,8 @@ class FaaWindTurbines(HttpDownload):
         except IndexError:
             _date_filter = kwargs.get("date_filter")
             if _date_filter is None:
-                _date_filter = self.parse_most_recent_file_from_dof_strings()
+                _date_filter = self.\
+                    parse_most_recent_file_from_dof_strings()
             pass
         # scrape using our date filter string
         self.scrape(search_str=_date_filter)
@@ -193,7 +195,7 @@ class FaaWindTurbines(HttpDownload):
         # There are a number of zip files published at the FAA DOF URL
         # at any time that we can use
         self.scrape(search_str=search_str)
-        _date_strings = self.files.split("/")[-1]
-        _date_strings = _date_strings.split("_")[-1]
-        _date_strings = int(_date_strings.split("[.]")[:-1])
+        _date_strings = [file.split("/")[-1] for file in self.files]
+        _date_strings = [date_string.split("_")[-1] for date_string in _date_strings]
+        _date_strings = [int(date_string.split(".")[:-1][0]) for date_string in _date_strings]
         return str(max(_date_strings))
