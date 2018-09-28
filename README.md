@@ -1,12 +1,12 @@
 ### Beatbox
 
-Beatbox is a simple Python wrapper for GDAL, Shapely, GeoRasters, and GeoPandas. It is designed to be a portable interface for working with large spatial datasets on cloud platforms like AWS and Google App Engine / Earth Engine. You install it's standard dependencies with anaconda or pip and can produce raster and vector datasets that can be integrated into common frameworks and distributed computing workflows. PLJV uses beatbox downstream for cloud computing.
+Beatbox is a simple Python wrapper for GDAL, Shapely, GeoRasters, and GeoPandas. It is designed to be a portable interface for working with large spatial datasets on cloud platforms like AWS and Google App Engine / Earth Engine. You install it's standard dependencies with anaconda or pip and can produce raster and vector datasets that can be integrated into common frameworks and distributed computing workflows. PLJV uses beatbox downstream for cloud computing tasks. You will see it as a standard dependency on a number of other projects. Beatbox supports Python 2 and 3 out-of-the-box, but you will need to use Python 2 for Earth Engine functionality. 
 
 *This is still a young project. If you are not a collaborator and just happened onto this repository while looking for ways to crunch geospatial data with Python, **this is probably not your tool**. For vector data, consider [GeoPandas](https://developers.google.com/earth-engine/python_install_manual). For raster data, consider [GeoRasters](https://github.com/ozak/georasters). For spatial workflows and distributed computing, consider [GeoTrellis](https://github.com/locationtech/geotrellis).*  
 
 For an overview of installing the Earth Engine Python API ([RTM](https://developers.google.com/earth-engine/python_install_manual)).
 
-We maintain beatbox and make it publically available (GPLv3) so that our collaborators can check our math. It is still very much under active development and not production ready. For the curious earth systems modeller experimenting with spatial data on Earth Engine or AWS that would like to get their hands dirty, dive in.
+We maintain beatbox and make it publicly available (GPLv3) so that our collaborators can check our math. It is still very much under active development and not production ready. For the curious earth systems modeller experimenting with spatial data on Earth Engine or AWS that would like to get their hands dirty, dive in.
 
 ### Installation
 From a direct download:

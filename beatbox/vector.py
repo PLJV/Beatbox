@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-"""
+#!/usr/bin/env python2
+
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2018, Playa Lakes Joint Venture"
 __credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts", "Stephen Chang"]
@@ -8,7 +8,7 @@ __version__ = "3"
 __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
-"""
+
 
 import os
 import fiona
@@ -21,8 +21,8 @@ from .convex_hulls import _units_are_metric
 
 import logging
 
-_METERS_TO_DEGREES: int = 111000
-_DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
+_METERS_TO_DEGREES = 111000
+_DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 # Fickle beast handlers for Earth Engine
 try:
     import ee
-    ee.initialize()
-except ModuleNotFoundError or ImportError:
+    ee.Initialize()
+except Exception:
     logger.warning("Failed to load the Earth Engine API. "
                    "Will continue to load but without "
                    "the EE functionality.")

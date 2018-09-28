@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
@@ -19,12 +19,12 @@ import ntpath
 
 from bs4 import BeautifulSoup as bs
 
-_CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
-                     "Release/"
-_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps" \
+_CDL_BASE_URL = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
+                "Release/"
+_PROBABLE_PLAYAS_BASE_URL = "https://pljv.org/for-habitat-partners/maps" \
                                  "-and-data/maps-of-probable-playas/"
-_FAA_DOF_URL: str = "https://www.faa.gov/air_traffic/flight_info/aeronav/digi" \
-                    "tal_products/dof/"
+_FAA_DOF_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digi" \
+               "tal_products/dof/"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -161,17 +161,17 @@ class HttpDownload:
 
 class Nass(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_CDL_BASE_URL, pattern="zip")
+        super(HttpDownload, self).__init__(url=_CDL_BASE_URL, pattern="zip")
 
 
 class ProbablePlayas(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
+        super(HttpDownload, self).__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
 
 
 class FaaWindTurbines(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_FAA_DOF_URL, pattern="zip")
+        super(HttpDownload, self).__init__(url=_FAA_DOF_URL, pattern="zip")
         # args[0] / date_filter=
         try:
             _date_filter = args[0]

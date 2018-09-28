@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-"""
+#!/usr/bin/env python2
+
 __author__ = ["Kyle Taylor", "Stephen Chang"]
 __copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
 __credits__ = ["Stephen Chang", "Kyle Taylor"]
@@ -8,7 +8,7 @@ __version__ = "3"
 __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
-"""
+
 import logging
 import numpy as np
 import geopandas as gp
@@ -18,10 +18,10 @@ from scipy.sparse.csgraph import connected_components
 
 from .vector import *
 
-_DEFAULT_BUFFER_WIDTH: int = 1000  # default width (in meters) of a geometry for various buffer operations
-_METERS_TO_DEGREES: int = 111000
-_DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
-_ARRAY_MAX: int = 800 # maximum array length to attempt numpy operations on before chunking
+_DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
+_METERS_TO_DEGREES = 111000
+_DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
+_ARRAY_MAX = 800 # maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
