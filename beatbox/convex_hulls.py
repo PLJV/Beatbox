@@ -196,7 +196,7 @@ def fuzzy_convex_hulls(*args, **kwargs):
     try:
         _points = args[0]
     except IndexError:
-        if kwargs.get('points'):
+        if kwargs.get('points', False):
             _points = kwargs.get('points')
         else:
             raise IndexError("invalid points= argument passed by user")
