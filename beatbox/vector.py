@@ -257,7 +257,7 @@ class Vector:
         else:
             _shape_collection = fiona.open(self.filename)
             try:
-                self._crs = _shape_collection.crs
+                self._crs = crs_sanity_check(_shape_collection.crs)
                 self._crs_wkt = _shape_collection.crs_wkt
                 # parse our dict of geometries into an actual shapely list
                 self._fiona_to_shapely_geometries(geometries=_shape_collection)
@@ -371,6 +371,8 @@ class Vector:
 
         return feature_collection
 
+def crs_sanity_check(self):
+    self.crs = fiona.crs.from_epsg(int(self.crs['init'].split(":")[1]))
 
 def is_json(*args, **kwargs):
     try:
