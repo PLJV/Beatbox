@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python2
 
 __author__ = "Kyle Taylor"
@@ -37,7 +38,7 @@ except Exception:
                    "the EE functionality.")
 
 
-class Vector:
+class Vector(object):
     def __init__(self, *args, **kwargs):
         """Handles file input/output operations for shapefiles \
         using fiona and shapely built-ins and performs select \
@@ -257,7 +258,7 @@ class Vector:
         else:
             _shape_collection = fiona.open(self.filename)
             try:
-                self._crs = crs_sanity_check(_shape_collection.crs)
+                self._crs = _shape_collection.crs
                 self._crs_wkt = _shape_collection.crs_wkt
                 # parse our dict of geometries into an actual shapely list
                 self._fiona_to_shapely_geometries(geometries=_shape_collection)
@@ -277,7 +278,7 @@ class Vector:
         try:
             self.filename = args[0]
         except IndexError:
-            if kwargs.get('filename'):
+            if kwargs.get('filename', False):
                 self.filename = kwargs.get('filename')
             # perhaps we explicitly set our filename elsewhere
             pass
@@ -286,7 +287,7 @@ class Vector:
         try:
             _type = args[1]
         except IndexError:
-            if kwargs.get('type'):
+            if kwargs.get('type', False):
                 _type = kwargs.get('type')
             pass
         try:
@@ -324,7 +325,7 @@ class Vector:
                            "will try to read from original source file instead")
             _gdf = gp.read_file(self._filename)
         # make sure we note our units, because GeoPandas doesn't by default
-        _gdf.crs["units"] = "degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"
+        #_gdf.crs["units"] = "degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"
         return _gdf
 
     def to_ee_feature_collection(self):
@@ -371,8 +372,8 @@ class Vector:
 
         return feature_collection
 
-def crs_sanity_check(self):
-    self.crs = fiona.crs.from_epsg(int(self.crs['init'].split(":")[1]))
+def fiona_compat_crs():
+    return fiona.crs.from_epsg(int(self.crs['init'].split(":")[1]))
 
 def is_json(*args, **kwargs):
     try:

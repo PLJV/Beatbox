@@ -19,7 +19,7 @@ from scipy.sparse.csgraph import connected_components
 from .vector import *
 
 _DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
-_METERS_TO_DEGREES = 111000
+_METERS_TO_DEGREES = float(111000)
 _DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 _ARRAY_MAX = 800 # maximum array length to attempt numpy operations on before chunking
 
@@ -52,8 +52,8 @@ def _units_are_metric(*args):
     :param args:
     :return:
     """
-    return True if args[0].crs['units'].find('meter')\
-                   > 0 else False
+    _gpdf = args[0]
+    return False if str(_gpdf[:1].geometry).find('.') != -1 else True
 
 def _dissolve_overlapping_geometries(*args, **kwargs):
     """
@@ -68,7 +68,7 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     try:
         _buffers = args[0]
     except IndexError:
-        if kwargs.get('buffers'):
+        if kwargs.get('buffers', False):
             _buffers = kwargs.get('buffers')
         else:
             raise IndexError("invalid buffers= "
@@ -91,7 +91,9 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
         split = int(round(_buffers.size / _ARRAY_MAX) + 1)
         logger.warning("Attempting dissolve operation on a large "
                        "vector dataset -- processing in %s chunks, "
-                       "which may lead to artifacts at boundaries", split)
+                       "which may lead to artifacts at boundaries. "
+                       "ETA: %s min",
+                       split, round((split*16.5**2)/60))
         chunks = list(_chunks(_buffers, split))
         try:
             # listcomp magic : for each geometry, determine whether it overlaps with
@@ -137,7 +139,7 @@ def _attribute_by_overlap(*args, **kwargs):
     try:
         _buffers = args[0]
     except IndexError:
-        if kwargs.get('buffers'):
+        if kwargs.get('buffers', False):
             _buffers = kwargs.get('buffers')
         else:
            raise IndexError("invalid buffers= argument provided by user")
@@ -145,7 +147,7 @@ def _attribute_by_overlap(*args, **kwargs):
     try:
         _points = args[1]
     except IndexError:
-        if kwargs.get('points'):
+        if kwargs.get('points', False):
             _points = kwargs.get('points')
         else:
             raise IndexError("invalid points= argument provided by user")
@@ -168,7 +170,7 @@ def convex_hull(*args, **kwargs):
     try:
         _points = args[0]
     except IndexError:
-        if kwargs.get('points'):
+        if kwargs.get('points', False):
             _points = kwargs.get('points')
         else:
             raise IndexError("invalid points= argument provided by user")
@@ -204,7 +206,7 @@ def fuzzy_convex_hulls(*args, **kwargs):
     try:
         _width = args[1]
     except IndexError:
-        if kwargs.get('width'):
+        if kwargs.get('width', False):
             _width = kwargs.get('width')
         else:
             _width = _DEFAULT_BUFFER_WIDTH
@@ -222,7 +224,7 @@ def fuzzy_convex_hulls(*args, **kwargs):
             logger.warning("Points dataframe is projected in degrees. Will convert to meters using a"
                            " scalar that is error-prone if you are far removed from the equator. "
                            "Try projecting in meters.")
-            _point_buffers = _point_buffers.buffer(_width / _METERS_TO_DEGREES)
+            _point_buffers = _point_buffers.buffer(_width / float(_METERS_TO_DEGREES))
     # assume AttributeErrors are due to args[0] not being a GeoPandas object
     except AttributeError as e:
         # if this is a string, assume that it is a path
@@ -236,19 +238,29 @@ def fuzzy_convex_hulls(*args, **kwargs):
                 logger.warning("Points dataframe is projected in degrees. Will convert to meters using a"
                                " scalar that is error-prone if you are far removed from the equator. "
                                "Try projecting in meters.")
-                _point_buffers = _point_buffers.buffer(_width/_METERS_TO_DEGREES)
+                _point_buffers = _point_buffers.buffer(_width/float(_METERS_TO_DEGREES))
         else:
             raise e
     except Exception as e:
         raise e
     # dissolve overlapping buffered geometries
     point_clusters = _attribute_by_overlap(_point_buffers, _points)
-    # drop any strange columns lurking in our data (i.e., not our clst_id or geometries)
-    cols_to_remove = list(point_clusters.columns).remove('clst_id').remove('geometry')
-    for col in cols_to_remove:
-        del point_clusters[col]
+    # drop any extra columns lurking in our point clusters data
+    # and dissolve by our clst_id field
+    if len(point_clusters.columns) > 2:
+        cols_to_remove = list(point_clusters.columns)
+        # i.e., not our clst_id or geometries
+        cols_to_remove.remove('clst_id')
+        cols_to_remove.remove('geometry')
+        for col in cols_to_remove:
+            del point_clusters[col]
+    point_clusters = point_clusters.dissolve(by='clst_id')
     # return our convex hulls as a GeoDataFrame
     gdf = gp.GeoDataFrame({'geometry': point_clusters.convex_hull})
     gdf.crs = point_clusters.crs
-    return(gdf)
+    # sanity check
+    if str(gdf[:1].geom_type).find('Polygon') == -1:
+        logger.warning("Call to geopandas convex_hull didn't return "
+                       "polygons -- this shouldn't happen")
+    return gdf
 

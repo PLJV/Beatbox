@@ -13,16 +13,14 @@ except ImportError:
 from shutil import copyfile
 
 INSTALL_REQUIRES = [
-    'scipy','pandas', 'shapely', 'fiona',
-    'descartes', 'pyproj', 'geopandas',
-    'georasters', 'geoplot', 'seaborn',
-    'psutil', 'requests', 'bs4', 'ee'
+    'scipy', 'pandas', 'shapely', 'fiona', 'pyproj', 'geopandas',
+    'georasters', 'psutil','requests', 'bs4'
 ]
 
 LONG_DESCRIPTION = ""
 
 setup(name='beatbox',
-      version=0.1,
+      version=0.2,
       description='shell scriptable exposure to ndimage and other tools for big raster processing and spatial analyses',
       license='GPL v.3',
       author=['Kyle Taylor','Alex Daniels','Meghan Mogearts'],

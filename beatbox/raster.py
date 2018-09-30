@@ -33,7 +33,7 @@ except Exception:
 _DEFAULT_NA_VALUE = -9999
 
 
-class Raster:
+class Raster(object):
     """
     Raster class is a wrapper for generating GeoRasters,
     Numpy arrays, and Earth Engine Image objects. It opens files

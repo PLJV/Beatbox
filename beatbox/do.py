@@ -14,7 +14,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Do:
+class Do(object):
     def __init__(self, *args):
         """
         Do is a dictcomp interface for performing arbitrary spatial tasks with Vector and Raster objects

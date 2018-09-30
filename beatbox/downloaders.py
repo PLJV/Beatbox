@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class HttpDownload:
+class HttpDownload(object):
     def __init__(self, *args, **kwargs):
         """
         Default web scraping interface for BeautifulSoup that will scrape
@@ -154,24 +154,24 @@ class HttpDownload:
         for i, f in enumerate(self.files):
             self.files[i] = self.files[i].split("/")[-1]
             if not os.path.exists(self.files[i]):
-                urllib.request.urlretrieve(f, self.files[i])
+                urllib.urlretrieve(f, self.files[i])
         # return our list of retrieved filenames to the user
         return self.files
 
 
 class Nass(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super(HttpDownload, self).__init__(url=_CDL_BASE_URL, pattern="zip")
+        super(Nass, self).__init__(url=_CDL_BASE_URL, pattern="zip")
 
 
 class ProbablePlayas(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super(HttpDownload, self).__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
+        super(ProbablePlayas, self).__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
 
 
 class FaaWindTurbines(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super(HttpDownload, self).__init__(url=_FAA_DOF_URL, pattern="zip")
+        super(FaaWindTurbines, self).__init__(url=_FAA_DOF_URL, pattern="zip")
         # args[0] / date_filter=
         try:
             _date_filter = args[0]
