@@ -83,7 +83,7 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
                        "which may lead to artifacts at boundaries. "
                        "ETA: %s min",
                        split, round((split*16.5**2)/60))
-        chunks = list(_chunks(_buffers, split))
+        chunks = _chunks(_buffers, split)
         try:
             # listcomp magic : for each geometry, determine whether it overlaps with
             # all other geometries in this chunk
