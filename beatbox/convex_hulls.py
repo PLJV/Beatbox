@@ -16,10 +16,7 @@ import numpy as np
 import geopandas as gp
 import fiona
 
-if sys.version_info[0] >= 3:
-    from .vector import *
-else:
-    import vector
+from beatbox.vector import _rebuild_crs
 
 from copy import copy
 from scipy.sparse.csgraph import connected_components
