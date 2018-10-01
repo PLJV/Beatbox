@@ -20,7 +20,7 @@ if sys.version_info[0] >= 3:
     from .vector import *
 else:
     import vector
-    
+
 from copy import copy
 from scipy.sparse.csgraph import connected_components
 
@@ -227,10 +227,10 @@ def fuzzy_convex_hulls(*args, **kwargs):
         cols_to_remove.remove('geometry')
         for col in cols_to_remove:
             del point_clusters[col]
-    point_clusters = point_clusters.dissolve(by='clst_id')
+    point_clusters = point_clusters.dissolve(by='geometry')
     # estimate our convex hulls and drop geometries that are not polygons
     convex_hulls = point_clusters.convex_hull
-    convex_hulls = convex_hulls[[str(ft).find("POLYGON")!=-1 
+    convex_hulls = convex_hulls[[str(ft).find("POLYGON")!=-1
                                  for ft in convex_hulls.geometry]]
     # return our convex hulls as a GeoDataFrame
     gdf = gp.GeoDataFrame({'geometry': convex_hulls})

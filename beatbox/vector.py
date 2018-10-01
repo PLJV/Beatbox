@@ -279,7 +279,7 @@ class Vector(object):
                 )
             except Exception as e:
                 raise e
-            
+
     def write(self, *args, **kwargs):
         """ wrapper for fiona.open that will write in-class geometry data to disk
 
@@ -384,7 +384,7 @@ class Vector(object):
         if self._crs:
             feature_collection["crs"].append(self._crs)
         # define our properties (attributes)
-        for i in _attributes.index: 
+        for i in _attributes.index:
             feature_collection['properties'].append(
                 self._attributes.loc[i].to_json()
             )
@@ -414,10 +414,6 @@ def is_json(*args, **kwargs):
     try:
         _string = json.loads(_string)
         return True
-    except json.JSONDecodeError:
-        return False
     except Exception:
-        raise Exception("General exception caught trying to parse string="
-                        " input. This shouldn't happen.")
-    return False
+        return False
 
