@@ -1,5 +1,4 @@
 ### Beatbox
-
 Beatbox is a simple Python wrapper for GDAL, Shapely, GeoRasters, and GeoPandas. 
 It is designed to be a portable interface for working with large spatial 
 datasets on cloud platforms like AWS and Google App Engine / Earth Engine. You 
