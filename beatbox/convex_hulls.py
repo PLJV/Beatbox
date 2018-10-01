@@ -9,18 +9,22 @@ __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
+import sys
 import logging
 import numpy as np
 import geopandas as gp
+import fiona
 
+if sys.version_info[0] >= 3:
+    from .vector import *
+else:
+    import vector
+    
 from copy import copy
 from scipy.sparse.csgraph import connected_components
 
-from .vector import *
-
+_DEFAULT_EPSG = 2163
 _DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
-_METERS_TO_DEGREES = float(111000)
-_DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
 _ARRAY_MAX = 800 # maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
@@ -42,18 +46,10 @@ def _chunks(*args):
     for i in range(0, len(_array), _n_chunks):
         yield _array[i:i + _n_chunks]
 
-def _units_are_metric(*args):
-    """
-    Hidden function that will (hackishly) determine whether
-    a Shapely or GeoPandas object's Coordinate Reference System
-    is using units of meters or degrees. This is needed for
-    input data where a 'units' attribute is not set by Fiona
-    or GeoPandas when a shapefile is read
-    :param args:
-    :return:
-    """
-    _gpdf = args[0]
-    return False if str(_gpdf[:1].geometry).find('.') != -1 else True
+def _rebuild_crs(*args):
+    _gdf = args[0]
+    _gdf.crs = fiona.crs.from_epsg(int(_gdf.crs['init'].split(":")[1]))
+    return _gdf
 
 def _dissolve_overlapping_geometries(*args, **kwargs):
     """
@@ -211,36 +207,17 @@ def fuzzy_convex_hulls(*args, **kwargs):
         else:
             _width = _DEFAULT_BUFFER_WIDTH
     # cast our points features as a gdf (if they aren't already)
-    if not isinstance(_points, gp.GeoDataFrame):
-        _points = _points.to_geodataframe()
+    if isinstance(_points, str):
+        _points = Vector(_points).to_geodataframe()
+    # reproject to something that uses metric units
+    _points = _rebuild_crs(_points)
+    _points = _points.to_crs(epsg=_DEFAULT_EPSG)
     # generate circular point buffers around our SpatialPoints features
     try:
         _point_buffers = copy(_points)
         # adjust the width= parameter based on the projection
         # of our point buffers
-        if _units_are_metric(_point_buffers):
-            _point_buffers = _point_buffers.buffer(_width)
-        else:
-            logger.warning("Points dataframe is projected in degrees. Will convert to meters using a"
-                           " scalar that is error-prone if you are far removed from the equator. "
-                           "Try projecting in meters.")
-            _point_buffers = _point_buffers.buffer(_width / float(_METERS_TO_DEGREES))
-    # assume AttributeErrors are due to args[0] not being a GeoPandas object
-    except AttributeError as e:
-        # if this is a string, assume that it is a path
-        # and try and open it -- otherwise raise an error
-        if isinstance(_points, str):
-            _points = Vector(_points).to_geodataframe()
-            _point_buffers = copy(_points)
-            if _units_are_metric(_point_buffers):
-                _point_buffers = _point_buffers.buffer(_width)
-            else:
-                logger.warning("Points dataframe is projected in degrees. Will convert to meters using a"
-                               " scalar that is error-prone if you are far removed from the equator. "
-                               "Try projecting in meters.")
-                _point_buffers = _point_buffers.buffer(_width/float(_METERS_TO_DEGREES))
-        else:
-            raise e
+        _point_buffers = _point_buffers.buffer(_width)
     except Exception as e:
         raise e
     # dissolve overlapping buffered geometries
@@ -255,12 +232,16 @@ def fuzzy_convex_hulls(*args, **kwargs):
         for col in cols_to_remove:
             del point_clusters[col]
     point_clusters = point_clusters.dissolve(by='clst_id')
+    # estimate our convex hulls and drop geometries that are not polygons
+    convex_hulls = point_clusters.convex_hull
+    convex_hulls = convex_hulls[[str(ft).find("POLYGON")!=-1 
+                                 for ft in convex_hulls.geometry]]
     # return our convex hulls as a GeoDataFrame
     gdf = gp.GeoDataFrame({'geometry': point_clusters.convex_hull})
     gdf.crs = point_clusters.crs
     # sanity check
-    if str(gdf[:1].geom_type).find('Polygon') == -1:
-        logger.warning("Call to geopandas convex_hull didn't return "
-                       "polygons -- this shouldn't happen")
+    if len(gdf) < 1:
+        logger.warning("Length of our convex hulls generated from buffered "
+                       "point features is <1, this shouldn't happen.")
     return gdf
 

@@ -11,6 +11,7 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
 
+import sys
 import os
 import fiona
 import geopandas as gp
@@ -18,12 +19,10 @@ import json
 
 from copy import copy
 from shapely.geometry import *
-from .convex_hulls import _units_are_metric
 
 import logging
 
-_METERS_TO_DEGREES = 111000
-_DEGREES_TO_METERS = (1 / _METERS_TO_DEGREES)
+_DEFAULT_EPSG = 2163
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -372,8 +371,12 @@ class Vector(object):
 
         return feature_collection
 
-def fiona_compat_crs():
-    return fiona.crs.from_epsg(int(self.crs['init'].split(":")[1]))
+def rebuild_crs(vector=None):
+    """
+    
+    """
+    vector.crs = fiona.crs.from_epsg(int(self.crs['init'].split(":")[1]))
+    return vector
 
 def is_json(*args, **kwargs):
     try:
@@ -386,68 +389,11 @@ def is_json(*args, **kwargs):
     # a valid json string
     try:
         _string = json.loads(_string)
-        _string = True
+        return True
     except json.JSONDecodeError:
-        _string = False
+        return False
     except Exception:
         raise Exception("General exception caught trying to parse string="
                         " input. This shouldn't happen.")
+    return False
 
-    return _string
-
-def intersection(vector=None, *args, **kwargs):
-    """ Returns the intersection of our focal Vector class with another Vector class """
-    pass
-
-def over(vector=None, *args, **kwargs):
-    """ Returns a boolean vector of overlapping features of our focal Vector class with another Vector class """
-    pass
-
-
-def buffer(*args, **kwargs):
-    """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
-    distance
-
-    Keyword arguments:
-    vector= a Vector object with spatial data
-    width= a width value to use for our buffering (in projected units of a given geometry \
-    -- typically meters or degrees)
-
-    Positional arguments:
-    1st= if no width keyword is provided, the first positional argument is treated as the \
-    width parameter
-    """
-    # args[0] / vector=
-    try:
-        _vector_geom = args[0]
-    except IndexError:
-        if kwargs.get('vector'):
-            _vector_geom = kwargs.get('vector')
-        else:
-            raise IndexError("invalid vector= argument passed by user")
-    _vector_geom = copy(_vector_geom)  # spec out a new class to store our buffering results
-    # args[1] / width=
-    try:
-        _width = args[1]
-    except IndexError:
-        if kwargs.get('width'):
-            _width = kwargs.get('width')
-        else:
-            raise IndexError("invalid width= argument passed by user")
-    # check and see if we are working in unit meters or degrees
-    if not _units_are_metric(_vector_geom):
-        logger.warning("vector= data is projected in degrees. Will "
-                       "convert to meters using a scalar that is error-prone "
-                       "if you are far removed from the equator. Try projecting "
-                       "source data in units of meters.")
-        _width = _DEGREES_TO_METERS * _width
-    # build a schema for our buffering operations
-    target_schema = _vector_geom.schema
-    target_schema['geometry'] = 'MultiPolygon'
-    # iterate our feature geometries and cast the output geometry as
-    # a MultiPolygon geometry
-    _vector_geom.schema = target_schema
-    _vector_geom.geometries = MultiPolygon(
-        [shape(ft['geometry']).buffer(_width) for ft in _vector_geom.geometries]
-    )
-    return _vector_geom
