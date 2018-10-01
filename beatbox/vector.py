@@ -202,7 +202,7 @@ class Vector(object):
         # determine if string= is even json
         try:
             _json = json.loads(string)
-        except json.JSONDecodeError:
+        except Exception:
             raise Exception("unable to process string= "
                             "argument... is this not a json string?")
         # determine if string= is geojson
@@ -213,13 +213,13 @@ class Vector(object):
             raise KeyError("Unable to parse features from json. "
                            "Is this not a GeoJSON string?")
         try:
-            self._crs = _json['crs']
+            self.crs = _json['crs']
         except KeyError:
             # nobody uses CRS with GeoJSON -- but it's default
             # projection is always(?) EPSG:4326
             logger.warning("no crs property defined for json input "
                            "-- assuming EPSG:4326")
-            self._crs = {'crs': 'epsg:4326'}
+            self.crs = {'crs': 'epsg:4326'}
         # listcomp : iterate over our features and convert them
         # to shape geometries
         self._geometries = [shape(ft['geometry']) for ft in _features]
@@ -333,15 +333,13 @@ class Vector(object):
             _gdf = gp.GeoDataFrame({
                 "geometry": gp.GeoSeries(self._geometries),
             })
-            _gdf.crs = self._crs
+            _gdf.crs = self.crs
             # merge in our attributes
             _gdf = _gdf.join(self._attributes)
         except Exception:
             logger.warning("failed to build a GeoDataFrame from shapely geometries -- "
                            "will try to read from original source file instead")
             _gdf = gp.read_file(self._filename)
-        # make sure we note our units, because GeoPandas doesn't by default
-        #_gdf.crs["units"] = "degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"
         return _gdf
 
     def to_ee_feature_collection(self):
@@ -356,7 +354,7 @@ class Vector(object):
         """
         _as_string = False
         try:
-            _as_string = True if kwargs.get("stringify", args) else False
+            _as_string = True if kwargs.get("stringify", False) else False
         except IndexError:
             _as_string = False
         except Exception as e:
@@ -408,6 +406,8 @@ def _geom_units(*args):
     # to use that units entry
     try:
         return _gdf['crs']['units']
+    # otherwise, let's hackishly lean on pyproj to figure out
+    # units from the full PROJ.4 string
     except KeyError:
         proj_4_string = pyproj.Proj(
             "+init=EPSG:"+str(_gdf.crs['init'].split(":")[1])
