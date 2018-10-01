@@ -34,8 +34,8 @@ try:
     ee.Initialize()
 except Exception:
     logger.warning("Failed to load the Earth Engine API. "
-                   "Will continue to load but without "
-                   "the EE functionality.")
+                   "Check your installation. Will continue "
+                   "to load but without the EE functionality.")
 
 
 class Vector(object):
