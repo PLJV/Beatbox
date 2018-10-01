@@ -46,11 +46,6 @@ def _chunks(*args):
     for i in range(0, len(_array), _n_chunks):
         yield _array[i:i + _n_chunks]
 
-def _rebuild_crs(*args):
-    _gdf = args[0]
-    _gdf.crs = fiona.crs.from_epsg(int(_gdf.crs['init'].split(":")[1]))
-    return _gdf
-
 def _dissolve_overlapping_geometries(*args, **kwargs):
     """
     Hidden function that will accept a GeoDataFrame containing Polygons,

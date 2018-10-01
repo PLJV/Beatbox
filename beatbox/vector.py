@@ -371,12 +371,13 @@ class Vector(object):
 
         return feature_collection
 
-def rebuild_crs(vector=None):
-    """
-    
-    """
-    vector.crs = fiona.crs.from_epsg(int(self.crs['init'].split(":")[1]))
-    return vector
+def _geom_units(*args):
+    pass
+
+def _rebuild_crs(*args):
+    _gdf = args[0]
+    _gdf.crs = fiona.crs.from_epsg(int(_gdf.crs['init'].split(":")[1]))
+    return _gdf
 
 def is_json(*args, **kwargs):
     try:
