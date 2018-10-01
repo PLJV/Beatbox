@@ -15,6 +15,7 @@ import sys
 import os
 import fiona
 import geopandas as gp
+import pandas as pd
 import json
 
 from copy import copy
@@ -172,6 +173,16 @@ class Vector(object):
         except Exception:
             self._fiona_to_shapely_geometries(geometries=self._geometries)
 
+    @property
+    def attributes(self):
+        """ decorated getter for our attributes """
+        return(self._attributes)
+
+    @attributes.setter
+    def attributes(self, *args):
+        """ setter for our attributes """
+        self._attributes = args[0]
+
     def _fiona_to_shapely_geometries(self, geometries=None):
         """
         Cast a list of features as a shapely geometries. This is
@@ -262,9 +273,13 @@ class Vector(object):
                 # parse our dict of geometries into an actual shapely list
                 self._fiona_to_shapely_geometries(geometries=_shape_collection)
                 self._schema = _shape_collection.schema
+                # process our attributes
+                self._attributes = pd.DataFrame(
+                    [ dict(item['properties']) for item in _shape_collection]
+                )
             except Exception as e:
                 raise e
-
+            
     def write(self, *args, **kwargs):
         """ wrapper for fiona.open that will write in-class geometry data to disk
 
@@ -319,6 +334,8 @@ class Vector(object):
                 "geometry": gp.GeoSeries(self._geometries),
             })
             _gdf.crs = self._crs
+            # merge in our attributes
+            _gdf = _gdf.join(self._attributes)
         except Exception:
             logger.warning("failed to build a GeoDataFrame from shapely geometries -- "
                            "will try to read from original source file instead")
@@ -348,7 +365,8 @@ class Vector(object):
         feature_collection = {
             "type": "FeatureCollection",
             "features": [],
-            "crs": []
+            "crs": [],
+            "properties": []
         }
         # iterate over features in our shapely geometries
         # and build-out our feature_collection
@@ -365,6 +383,11 @@ class Vector(object):
         # note the CRS
         if self._crs:
             feature_collection["crs"].append(self._crs)
+        # define our properties (attributes)
+        for i in _attributes.index: 
+            feature_collection['properties'].append(
+                self._attributes.loc[i].to_json()
+            )
         # do we want this stringified?
         if _as_string:
             feature_collection = json.dumps(feature_collection)
