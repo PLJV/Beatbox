@@ -16,7 +16,7 @@ import numpy as np
 import geopandas as gp
 import fiona
 
-from beatbox.vector import _rebuild_crs
+from beatbox.vector import Vector, _rebuild_crs
 
 from copy import copy
 from scipy.sparse.csgraph import connected_components
@@ -78,7 +78,7 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     # determine appropriate groupings for our overlapping buffers
     if _buffers.size > _ARRAY_MAX:
         split = int(round(_buffers.size / _ARRAY_MAX) + 1)
-        logger.warning("Attempting dissolve operation on a large "
+        logger.warning("Attempting intersect operation on a large "
                        "vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries. "
                        "ETA: %s min",

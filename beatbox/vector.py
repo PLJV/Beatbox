@@ -11,14 +11,14 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
 
-import sys
 import os
 import fiona
 import geopandas as gp
 import pandas as pd
 import json
 
-from copy import copy
+import pyproj
+
 from shapely.geometry import *
 
 import logging
@@ -252,7 +252,7 @@ class Vector(object):
                 if os.path.exists(kwargs.get('filename')):
                     self._filename = kwargs.get('filename')
                 else:
-                    raise FileNotFoundError("invalid filename= argument supplied by user")
+                    raise OSError("invalid filename= argument supplied by user")
             elif kwargs.get('string'):
                 if is_json(kwargs.get('string')):
                     _json = kwargs.get('string')
@@ -384,9 +384,9 @@ class Vector(object):
         if self._crs:
             feature_collection["crs"].append(self._crs)
         # define our properties (attributes)
-        for i in _attributes.index:
+        for i in self.attributes.index:
             feature_collection['properties'].append(
-                self._attributes.loc[i].to_json()
+                self.attributes.loc[i].to_json()
             )
         # do we want this stringified?
         if _as_string:
@@ -395,7 +395,28 @@ class Vector(object):
         return feature_collection
 
 def _geom_units(*args):
-    pass
+    # args[0]
+    try:
+        _gdf = args[0]
+    except IndexError:
+        raise IndexError("1st positional argument should either "
+                         "be a Vector or GeoDataFrame object")
+    if isinstance(_gdf, Vector):
+        _gdf = _gdf.to_geodataframe()
+    # by default, there should be a units key
+    # associated with the CRS dict object. Prefer
+    # to use that units entry
+    try:
+        return _gdf['crs']['units']
+    except KeyError:
+        proj_4_string = pyproj.Proj(
+            "+init=EPSG:"+str(_gdf.crs['init'].split(":")[1])
+        )
+        _units = proj_4_string.srs.split("+units=")[1].split(" +")[0]
+        if _units.find("m") != -1:
+            return "m"
+        else:
+            return _units
 
 def _rebuild_crs(*args):
     _gdf = args[0]
