@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python2
 
 __author__ = ["Kyle Taylor", "Stephen Chang"]
@@ -232,8 +233,8 @@ def fuzzy_convex_hulls(*args, **kwargs):
     convex_hulls = convex_hulls[[str(ft).find("POLYGON")!=-1 
                                  for ft in convex_hulls.geometry]]
     # return our convex hulls as a GeoDataFrame
-    gdf = gp.GeoDataFrame({'geometry': point_clusters.convex_hull})
-    gdf.crs = point_clusters.crs
+    gdf = gp.GeoDataFrame({'geometry': convex_hulls})
+    gdf.crs = _points.crs
     # sanity check
     if len(gdf) < 1:
         logger.warning("Length of our convex hulls generated from buffered "
