@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2017, Playa Lakes Joint Venture"
@@ -15,21 +15,22 @@ import re
 import requests
 import urllib
 import logging
+import ntpath
 
 from bs4 import BeautifulSoup as bs
 
-_CDL_BASE_URL: str = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
-                     "Release/"
-_PROBABLE_PLAYAS_BASE_URL: str = "https://pljv.org/for-habitat-partners/maps" \
+_CDL_BASE_URL = "http://www.nass.usda.gov/Research_and_Science/Cropland/" \
+                "Release/"
+_PROBABLE_PLAYAS_BASE_URL = "https://pljv.org/for-habitat-partners/maps" \
                                  "-and-data/maps-of-probable-playas/"
-_FAA_DOF_URL: str = "https://www.faa.gov/air_traffic/flight_info/aeronav/digi" \
-                    "tal_products/dof/"
+_FAA_DOF_URL = "https://www.faa.gov/air_traffic/flight_info/aeronav/digi" \
+               "tal_products/dof/"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class HttpDownload:
+class HttpDownload(object):
     def __init__(self, *args, **kwargs):
         """
         Default web scraping interface for BeautifulSoup that will scrape
@@ -148,36 +149,37 @@ class HttpDownload:
                              "provided: check the search_str argument")
 
     def download(self):
-        if not self._files:
+        if not self.files:
             self.scrape()
-        for i, f in enumerate(self._files):
-            if not os.path.exists(self._files[i].split("/")[-1]):
-                print(i+1, end="")
-                urllib.request.urlretrieve(f, self._files[i].split("/")[-1])
+        for i, f in enumerate(self.files):
+            self.files[i] = self.files[i].split("/")[-1]
+            if not os.path.exists(self.files[i]):
+                urllib.urlretrieve(f, self.files[i])
         # return our list of retrieved filenames to the user
-        return(self.files)
+        return self.files
 
 
 class Nass(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_CDL_BASE_URL, pattern="zip")
+        super(Nass, self).__init__(url=_CDL_BASE_URL, pattern="zip")
 
 
 class ProbablePlayas(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
+        super(ProbablePlayas, self).__init__(url=_PROBABLE_PLAYAS_BASE_URL, pattern="zip")
 
 
 class FaaWindTurbines(HttpDownload):
     def __init__(self, *args, **kwargs):
-        super().__init__(url=_FAA_DOF_URL, pattern="zip")
+        super(FaaWindTurbines, self).__init__(url=_FAA_DOF_URL, pattern="zip")
         # args[0] / date_filter=
         try:
             _date_filter = args[0]
         except IndexError:
             _date_filter = kwargs.get("date_filter")
             if _date_filter is None:
-                _date_filter = self.parse_most_recent_file_from_dof_strings()
+                _date_filter = self.\
+                    parse_most_recent_file_from_dof_strings()
             pass
         # scrape using our date filter string
         self.scrape(search_str=_date_filter)
@@ -193,7 +195,7 @@ class FaaWindTurbines(HttpDownload):
         # There are a number of zip files published at the FAA DOF URL
         # at any time that we can use
         self.scrape(search_str=search_str)
-        _date_strings = self.files.split("/")[-1]
-        _date_strings = _date_strings.split("_")[-1]
-        _date_strings = int(_date_strings.split("[.]")[:-1])
+        _date_strings = [file.split("/")[-1] for file in self.files]
+        _date_strings = [date_string.split("_")[-1] for date_string in _date_strings]
+        _date_strings = [int(date_string.split(".")[:-1][0]) for date_string in _date_strings]
         return str(max(_date_strings))

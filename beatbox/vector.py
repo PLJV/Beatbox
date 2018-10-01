@@ -1,5 +1,6 @@
-#!/usr/bin/python3
-"""
+
+#!/usr/bin/env python2
+
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2018, Playa Lakes Joint Venture"
 __credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts", "Stephen Chang"]
@@ -8,21 +9,21 @@ __version__ = "3"
 __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
-"""
+
 
 import os
 import fiona
 import geopandas as gp
+import pandas as pd
 import json
 
-from copy import copy
+import pyproj
+
 from shapely.geometry import *
-from .convex_hulls import _units_are_metric
 
 import logging
 
-_METERS_TO_DEGREES: int = 111000
-_DEGREES_TO_METERS: float = (1 / _METERS_TO_DEGREES)
+_DEFAULT_EPSG = 2163
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,14 +31,14 @@ logger = logging.getLogger(__name__)
 # Fickle beast handlers for Earth Engine
 try:
     import ee
-    ee.initialize()
-except ModuleNotFoundError or ImportError:
+    ee.Initialize()
+except Exception:
     logger.warning("Failed to load the Earth Engine API. "
-                   "Will continue to load but without "
-                   "the EE functionality.")
+                   "Check your installation. Will continue "
+                   "to load but without the EE functionality.")
 
 
-class Vector:
+class Vector(object):
     def __init__(self, *args, **kwargs):
         """Handles file input/output operations for shapefiles \
         using fiona and shapely built-ins and performs select \
@@ -172,6 +173,16 @@ class Vector:
         except Exception:
             self._fiona_to_shapely_geometries(geometries=self._geometries)
 
+    @property
+    def attributes(self):
+        """ decorated getter for our attributes """
+        return(self._attributes)
+
+    @attributes.setter
+    def attributes(self, *args):
+        """ setter for our attributes """
+        self._attributes = args[0]
+
     def _fiona_to_shapely_geometries(self, geometries=None):
         """
         Cast a list of features as a shapely geometries. This is
@@ -191,7 +202,7 @@ class Vector:
         # determine if string= is even json
         try:
             _json = json.loads(string)
-        except json.JSONDecodeError:
+        except Exception:
             raise Exception("unable to process string= "
                             "argument... is this not a json string?")
         # determine if string= is geojson
@@ -202,13 +213,13 @@ class Vector:
             raise KeyError("Unable to parse features from json. "
                            "Is this not a GeoJSON string?")
         try:
-            self._crs = _json['crs']
+            self.crs = _json['crs']
         except KeyError:
             # nobody uses CRS with GeoJSON -- but it's default
             # projection is always(?) EPSG:4326
             logger.warning("no crs property defined for json input "
                            "-- assuming EPSG:4326")
-            self._crs = {'crs': 'epsg:4326'}
+            self.crs = {'crs': 'epsg:4326'}
         # listcomp : iterate over our features and convert them
         # to shape geometries
         self._geometries = [shape(ft['geometry']) for ft in _features]
@@ -241,7 +252,7 @@ class Vector:
                 if os.path.exists(kwargs.get('filename')):
                     self._filename = kwargs.get('filename')
                 else:
-                    raise FileNotFoundError("invalid filename= argument supplied by user")
+                    raise OSError("invalid filename= argument supplied by user")
             elif kwargs.get('string'):
                 if is_json(kwargs.get('string')):
                     _json = kwargs.get('string')
@@ -262,6 +273,10 @@ class Vector:
                 # parse our dict of geometries into an actual shapely list
                 self._fiona_to_shapely_geometries(geometries=_shape_collection)
                 self._schema = _shape_collection.schema
+                # process our attributes
+                self._attributes = pd.DataFrame(
+                    [ dict(item['properties']) for item in _shape_collection]
+                )
             except Exception as e:
                 raise e
 
@@ -277,7 +292,7 @@ class Vector:
         try:
             self.filename = args[0]
         except IndexError:
-            if kwargs.get('filename'):
+            if kwargs.get('filename', False):
                 self.filename = kwargs.get('filename')
             # perhaps we explicitly set our filename elsewhere
             pass
@@ -286,7 +301,7 @@ class Vector:
         try:
             _type = args[1]
         except IndexError:
-            if kwargs.get('type'):
+            if kwargs.get('type', False):
                 _type = kwargs.get('type')
             pass
         try:
@@ -318,13 +333,13 @@ class Vector:
             _gdf = gp.GeoDataFrame({
                 "geometry": gp.GeoSeries(self._geometries),
             })
-            _gdf.crs = self._crs
+            _gdf.crs = self.crs
+            # merge in our attributes
+            _gdf = _gdf.join(self._attributes)
         except Exception:
             logger.warning("failed to build a GeoDataFrame from shapely geometries -- "
                            "will try to read from original source file instead")
             _gdf = gp.read_file(self._filename)
-        # make sure we note our units, because GeoPandas doesn't by default
-        _gdf.crs["units"] = "degrees" if _gdf.geometry[0].wkt.find('.') != -1 else "meters"
         return _gdf
 
     def to_ee_feature_collection(self):
@@ -339,7 +354,7 @@ class Vector:
         """
         _as_string = False
         try:
-            _as_string = True if kwargs.get("stringify", args) else False
+            _as_string = True if kwargs.get("stringify", False) else False
         except IndexError:
             _as_string = False
         except Exception as e:
@@ -348,7 +363,8 @@ class Vector:
         feature_collection = {
             "type": "FeatureCollection",
             "features": [],
-            "crs": []
+            "crs": [],
+            "properties": []
         }
         # iterate over features in our shapely geometries
         # and build-out our feature_collection
@@ -365,12 +381,47 @@ class Vector:
         # note the CRS
         if self._crs:
             feature_collection["crs"].append(self._crs)
+        # define our properties (attributes)
+        for i in self.attributes.index:
+            feature_collection['properties'].append(
+                self.attributes.loc[i].to_json()
+            )
         # do we want this stringified?
         if _as_string:
             feature_collection = json.dumps(feature_collection)
 
         return feature_collection
 
+def _geom_units(*args):
+    # args[0]
+    try:
+        _gdf = args[0]
+    except IndexError:
+        raise IndexError("1st positional argument should either "
+                         "be a Vector or GeoDataFrame object")
+    if isinstance(_gdf, Vector):
+        _gdf = _gdf.to_geodataframe()
+    # by default, there should be a units key
+    # associated with the CRS dict object. Prefer
+    # to use that units entry
+    try:
+        return _gdf['crs']['units']
+    # otherwise, let's hackishly lean on pyproj to figure out
+    # units from the full PROJ.4 string
+    except KeyError:
+        proj_4_string = pyproj.Proj(
+            "+init=EPSG:"+str(_gdf.crs['init'].split(":")[1])
+        )
+        _units = proj_4_string.srs.split("+units=")[1].split(" +")[0]
+        if _units.find("m") != -1:
+            return "m"
+        else:
+            return _units
+
+def _rebuild_crs(*args):
+    _gdf = args[0]
+    _gdf.crs = fiona.crs.from_epsg(int(_gdf.crs['init'].split(":")[1]))
+    return _gdf
 
 def is_json(*args, **kwargs):
     try:
@@ -383,68 +434,7 @@ def is_json(*args, **kwargs):
     # a valid json string
     try:
         _string = json.loads(_string)
-        _string = True
-    except json.JSONDecodeError:
-        _string = False
+        return True
     except Exception:
-        raise Exception("General exception caught trying to parse string="
-                        " input. This shouldn't happen.")
+        return False
 
-    return _string
-
-def intersection(vector=None, *args, **kwargs):
-    """ Returns the intersection of our focal Vector class with another Vector class """
-    pass
-
-def over(vector=None, *args, **kwargs):
-    """ Returns a boolean vector of overlapping features of our focal Vector class with another Vector class """
-    pass
-
-
-def buffer(*args, **kwargs):
-    """Buffer a shapely geometry collection (or the focal Vector class) by some user-specified \
-    distance
-
-    Keyword arguments:
-    vector= a Vector object with spatial data
-    width= a width value to use for our buffering (in projected units of a given geometry \
-    -- typically meters or degrees)
-
-    Positional arguments:
-    1st= if no width keyword is provided, the first positional argument is treated as the \
-    width parameter
-    """
-    # args[0] / vector=
-    try:
-        _vector_geom = args[0]
-    except IndexError:
-        if kwargs.get('vector'):
-            _vector_geom = kwargs.get('vector')
-        else:
-            raise IndexError("invalid vector= argument passed by user")
-    _vector_geom = copy(_vector_geom)  # spec out a new class to store our buffering results
-    # args[1] / width=
-    try:
-        _width = args[1]
-    except IndexError:
-        if kwargs.get('width'):
-            _width = kwargs.get('width')
-        else:
-            raise IndexError("invalid width= argument passed by user")
-    # check and see if we are working in unit meters or degrees
-    if not _units_are_metric(_vector_geom):
-        logger.warning("vector= data is projected in degrees. Will "
-                       "convert to meters using a scalar that is error-prone "
-                       "if you are far removed from the equator. Try projecting "
-                       "source data in units of meters.")
-        _width = _DEGREES_TO_METERS * _width
-    # build a schema for our buffering operations
-    target_schema = _vector_geom.schema
-    target_schema['geometry'] = 'MultiPolygon'
-    # iterate our feature geometries and cast the output geometry as
-    # a MultiPolygon geometry
-    _vector_geom.schema = target_schema
-    _vector_geom.geometries = MultiPolygon(
-        [shape(ft['geometry']).buffer(_width) for ft in _vector_geom.geometries]
-    )
-    return _vector_geom

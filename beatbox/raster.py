@@ -1,6 +1,13 @@
-"""
-Various manipulations on georasters.GeoRaster and numpy objects that we use for raster operations
-"""
+#!/usr/bin/env python2
+
+__author__ = "Kyle Taylor"
+__copyright__ = "Copyright 2018, Playa Lakes Joint Venture"
+__credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts", "Stephen Chang"]
+__license__ = "GPL"
+__version__ = "3"
+__maintainer__ = "Kyle Taylor"
+__email__ = "kyle.taylor@pljv.org"
+__status__ = "Testing"
 
 import numpy
 import georasters as gr
@@ -16,17 +23,16 @@ logger = logging.getLogger(__name__)
 # Fickle beast handlers for Earth Engine
 try:
     import ee
-    ee.initialize()
-except ModuleNotFoundError or ImportError:
+    ee.Initialize()
+except Exception:
     logger.warning("Failed to load the Earth Engine API. "
-                   "Will continue to load but without the "
-                   "EE functionality.")
-    pass
+                   "Check your installation. Will continue "
+                   "to load but without the EE functionality.")
 
-_DEFAULT_NA_VALUE: int = -9999
+_DEFAULT_NA_VALUE = -9999
 
 
-class Raster:
+class Raster(object):
     """
     Raster class is a wrapper for generating GeoRasters,
     Numpy arrays, and Earth Engine Image objects. It opens files
