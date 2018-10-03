@@ -148,7 +148,7 @@ def _attribute_by_overlap(*args, **kwargs):
         rename(columns={'index_right': 'clst_id'})
 
 
-def convex_hull(*args, **kwargs):
+def _local_convex_hull(*args, **kwargs):
     """
     Accepts point features as a GeoDataFrame and uses geopandas to
     calulate a convex hull from the geometries
@@ -175,7 +175,7 @@ def convex_hull(*args, **kwargs):
     # GeoPandasDataframe->convex_hull()
     return _points.convex_hull()
 
-def fuzzy_convex_hulls(*args, **kwargs):
+def _local_fuzzy_convex_hull(*args, **kwargs):
     """
     Accepts a GeoDataFrame containing points, buffers the point geometries by some distance,
     and than builds convex hulls from point clusters
