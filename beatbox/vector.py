@@ -426,6 +426,24 @@ def _local_rebuild_crs(*args):
     return _gdf
 
 
+def rebuild_crs(*args, **kwargs):
+    """
+    Build a CRS dict for a user-specified Vector or GeoDataFrame object
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    try:
+        _backend = args[len(args)]
+    except IndexError:
+        _backend = kwargs.get('backend', 'local')
+    if _backend.lower().find('local') != -1:
+        return _local_rebuild_crs(*args)
+    elif _backend.lower().find('ee') != -1:
+        raise BaseException("Currently only local operations for this function are supported")
+    else:
+        raise BaseException("Unknown backend type specified")
+
 def is_json(*args, **kwargs):
     try:
         _string = args[0]
