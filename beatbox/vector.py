@@ -243,7 +243,10 @@ class Vector(object):
         _filename = None
         # args[0] / -filename / -string
         try:
-            _filename = kwargs.get('filename', args[0])
+            if kwargs.get('filename', None) is not None:
+                _filename = kwargs.get('filename')
+            else:
+                _filename = args[0]
             if not os.path.exists(_filename):
                 if is_json(_filename):
                     _json = _filename
@@ -283,13 +286,19 @@ class Vector(object):
         """
         # args[0] / filename=
         try:
-            self.filename = kwargs.get('filename', args[0])
+            if kwargs.get('filename', None) is not None:
+                self.filename = kwargs.get('filename')
+            else:
+                self.filename = args[0]
         except IndexError:
             # perhaps we explicitly set our filename elsewhere
             pass
         # args[1] / type=
         try:
-            _type = kwargs.get('type', args[1])
+            if kwargs.get('type', None) is not None:
+                _type = kwargs.get('type')
+            else:
+                _type = args[1]
         except IndexError:
             _type = 'ESRI Shapefile'  # by default, write as a shapefile
         try:
@@ -342,7 +351,10 @@ class Vector(object):
         """
         _as_string = False
         try:
-            _as_string = kwargs.get("stringify", args[0])
+            if kwargs.get("stringify", None) is not None:
+                _as_string = kwargs.get("stringify")
+            else:
+                _as_string = args[0]
         except IndexError:
             _as_string = False
         # build a target dictionary
@@ -432,7 +444,10 @@ def rebuild_crs(*args, **kwargs):
 
 def is_json(*args, **kwargs):
     try:
-        _string = kwargs.get("string", args[0])
+        if kwargs.get("string", None) is not None:
+            _string = kwargs.get("string")
+        else:
+            _string = args[0]
     except IndexError:
         raise IndexError("invalid string= argument passed by user")
     # sneakily use json.loads() to test whether this is

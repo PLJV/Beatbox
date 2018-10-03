@@ -55,7 +55,10 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     """
     # args[0] / buffers=
     try:
-        _buffers = kwargs.get('buffers', args[0])
+        if kwargs.get('buffers', None) is not None:
+            _buffers = kwargs.get('buffers')
+        else:
+            _buffers = args[0]
     except IndexError:
         raise IndexError("invalid buffers= "
                          "argument provided by user")
@@ -124,12 +127,18 @@ def _attribute_by_overlap(*args, **kwargs):
     """
     # args[0] / buffers=
     try:
-        _buffers = kwargs.get('buffers', args[0])
+        if kwargs.get('buffers', None) is not None:
+            _buffers = kwargs.get('buffers')
+        else:
+            _buffers = args[0]
     except IndexError:
         raise IndexError("invalid buffers= argument provided by user")
     # args[1] / points=
     try:
-        _points = kwargs.get('points', args[1])
+        if kwargs.get('points', None) is not None:
+            _points = kwargs.get('points')
+        else:
+            _points = args[1]
     except IndexError:
         raise IndexError("invalid points= argument provided by user")
     # dissolve-by explode
@@ -149,7 +158,10 @@ def _local_convex_hull(*args, **kwargs):
     :return: GeoDataFrame
     """
     try:
-        _points = kwargs.get('points', args[0])
+        if kwargs.get('points', None) is not None:
+            _points = kwargs.get('points')
+        else:
+            _points = args[0]
     except IndexError:
         raise IndexError("invalid points= argument provided by user")
     # try and process our lone 'points' argument
@@ -177,12 +189,18 @@ def _local_fuzzy_convex_hull(*args, **kwargs):
     """
     # args[0] / points=
     try:
-        _points = kwargs.get('points', args[0])
+        if kwargs.get('points', None) is not None:
+            _points = kwargs.get('points')
+        else:
+            _points = args[0]
     except IndexError:
         raise IndexError("invalid points= argument passed by user")
     # args[1] / width=
     try:
-        _width = kwargs.get('width', args[1])
+        if kwargs.get('width', None) is not None:
+            _width = kwargs.get('width')
+        else:
+            _width = args[1]
     except IndexError:
         _width = _DEFAULT_BUFFER_WIDTH
     # cast our points features as a gdf (if they aren't already)
@@ -240,12 +258,18 @@ def fuzzy_convex_hull(*args, **kwargs):
     """
     # args[0]/points=
     try:
-        _points = kwargs.get('points', args[0])
+        if kwargs.get('points', None) is not None:
+            _points = kwargs.get('points')
+        else:
+            _points = args[0]
     except IndexError:
         raise IndexError("invalid points= argument")
     # args[1]/width=
     try:
-        _width = kwargs.get('width', args[1])
+        if kwargs.get('width', None) is not None:
+            _width = kwargs.get('width')
+        else:
+            _width = args[1]
     except IndexError:
         raise IndexError("invalid buffer width= argument.")
     # args[2]/backend=

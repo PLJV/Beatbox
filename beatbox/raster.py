@@ -162,15 +162,24 @@ def _local_binary_reclassify(*args, **kwargs):
     match or do not match the values of an input match array.
     """
     try:
-        _raster = kwargs.get('raster', args[0])
+        if kwargs.get('raster', None) is not None:
+            _raster = kwargs.get('raster')
+        else:
+            _raster = args[0]
     except IndexError:
         IndexError("invalid raster= argument supplied by user")
     try:
-        _match = kwargs.get('match', args[1])
+        if kwargs.get('match', None) is not None:
+            _match = kwargs.get('match')
+        else:
+            _match =  args[1]
     except IndexError:
         IndexError("invalid match= argument supplied by user")
     try:
-        _invert = kwargs.get('invert', args[2])
+        if kwargs.get('invert', None) is not None:
+            _invert = kwargs.get('invert')
+        else:
+            _invert = args[2]
     except IndexError:
         IndexError("invalid invert= argument supplied by user")
     return numpy.reshape(
@@ -189,11 +198,17 @@ def _local_reclassify(*args, **kwargs):
 def _local_crop(*args, **kwargs):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
     try:
-        _raster = kwargs.get('raster', args[0])
+        if kwargs.get('raster', None) is not None:
+            _raster = kwargs.get('raster')
+        else:
+            _raster = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
     try:
-        _shape = kwargs.get('shape', args[1])
+        if kwargs.get('shape', None) is not None:
+            _shape = kwargs.get('shape')
+        else:
+            _shape = args[1]
     except IndexError:
         raise IndexError("invalid shape=argument specified")
     return _raster.to_georaster().gr.clip(_shape)
@@ -203,11 +218,17 @@ def _local_crop(*args, **kwargs):
 def _local_clip(*args, **kwargs):
     """clip is a hold-over from gr that performs a crop operation"""
     try:
-        _raster = kwargs.get('raster', args[0])
+        if kwargs.get('raster', None) is not None:
+            _raster = kwargs.get('raster')
+        else:
+            _raster = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
     try:
-        _shape = kwargs.get('shape', args[1])
+        if kwargs.get('shape', None) is not None:
+            _shape = kwargs.get('shape')
+        else:
+            _shape = args[1]
     except IndexError:
         raise IndexError("invalid shape= argument specified")
     return _local_crop(raster=_raster, shape=_shape)
@@ -240,7 +261,6 @@ def _ee_extract(*args, **kwargs):
     if not _HAVE_EE:
         raise AttributeError("Requested Earth Engine functionality, "
                              "but we failed to load and initialize the ee package.")
-    pass
 
 
 def _local_reproject(*args, **kwargs):
@@ -250,7 +270,10 @@ def _local_reproject(*args, **kwargs):
 def _local_merge(*args, **kwargs):
     """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
     try:
-        _rasters = kwargs.get('rasters', args[0])
+        if kwargs.get('rasters', None) is not None:
+            _rasters = kwargs.get('rasters')
+        else:
+            _rasters = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
     return gr.merge(_rasters)
@@ -261,11 +284,17 @@ def _local_split(*args, **kwargs):
     """Stump for numpy._array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation."""
     try:
-        _raster = kwargs.get('raster', args[0])
+        if kwargs.get('raster', None) is not None:
+            _raster = kwargs.get('raster')
+        else:
+            _raster = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
     try:
-        _n = kwargs.get('n', args[1])
+        if kwargs.get('n', None) is not None:
+            _n = kwargs.get('n')
+        else:
+            _n = args[1]
     except IndexError:
         raise IndexError("invalid n= argument specified")
     return numpy.array_split(
@@ -277,19 +306,31 @@ def _ram_sanity_check(*args, **kwargs):
     """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
     between your available ram and your proposed operation(s). Negatives are bad. """
     try:
-        _raster = kwargs.get('raster', args[0])
+        if kwargs.get('raster', None) is not None:
+            _raster = kwargs.get('raster')
+        else:
+            _raster = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
     try:
-        _dtype = kwargs.get('dtype', args[1])
+        if kwargs.get('dtype', None) is not None:
+            _dtype = kwargs.get('dtype')
+        else:
+            _dtype = args[1]
     except IndexError:
         raise IndexError("invalid dtype= argument specified")
     try:
-        _nOperation = kwargs.get('nOperation', args[2])
+        if kwargs.get('n_operation', None) is not None:
+            _n_operations = kwargs.get('n_operations')
+        else:
+            _n_operations = args[2]
     except IndexError:
-        raise IndexError("invalid nOperation= argument specified")
+        raise IndexError("invalid n_operation= argument specified")
     try:
-        _as_gigabytes = kwargs.get('as_gigabytes', args[3])
+        if kwargs.get('as_gigabytes', None) is not None:
+            _as_gigabytes = kwargs.get('as_gigabytes')
+        else:
+            _as_gigabytes = args[3]
     except IndexError:
         raise IndexError("invalid as_gigabytes= argument specified")
     try:
@@ -300,7 +341,7 @@ def _ram_sanity_check(*args, **kwargs):
     return _get_free_ram(as_gigabytes=_as_gigabytes) - _est_ram_usage(
         _raster.array.shape,
         dtype=_dtype,
-        n_operations=_nOperation,
+        n_operations=_n_operations,
         as_gigabytes=_as_gigabytes
     )
 
