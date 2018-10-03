@@ -10,7 +10,6 @@ __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
-import sys
 import logging
 import numpy as np
 import geopandas as gp
@@ -33,8 +32,8 @@ def _chunks(*args):
     """
     Hidden function that will accept an array (list) and split it up into
     chunks of an arbitrary length using the Python yield built-in
-    :param args:
-    :return:
+    :param arg1: A list of things we wish to split into chunks
+    :return: Generator object
     """
     try:
         _array = args[0]
@@ -50,9 +49,9 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     Hidden function that will accept a GeoDataFrame containing Polygons,
     explode the geometries from single part to multi part, and then dissolve
     geometries that overlap spatially.
-    :param args:
-    :param kwargs:
-    :return:
+    :param arg1: A GeoDataFrame or Vector object specifying source buffers 'groups' we intend to attribute with
+    :param buffers: Keyword specification for first positional argument
+    :return: GeoDataFrame
     """
     # args[0] / buffers=
     try:
@@ -118,12 +117,13 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
 
 def _attribute_by_overlap(*args, **kwargs):
     """
-    Hidden function that will use the group attribute from polygon features to classify
-    point geometries -- this is intended to be used as a classifier for overlapping
-    geometries
-    :param args:
-    :param kwargs:
-    :return:
+    Hidden function that will use the group attribute from intersecting polygon features to classify
+    point geometries. This is intended to be used as a fuzzy classifier and is a shorthand for gp.sjoin().
+    :param arg1: A GeoDataFrame or Vector object specifying source buffers 'groups' we intend to attribute with
+    :param arg2: A GeoDataFrame or Vector object specifying source points to be attributed
+    :param buffers: Keyword specification for first positional argument
+    :param points: Keyword specification for second positional argument
+    :return: GeoDataFrame
     """
     # args[0] / buffers=
     try:
@@ -152,9 +152,9 @@ def _attribute_by_overlap(*args, **kwargs):
 def _local_convex_hull(*args, **kwargs):
     """
     Accepts point features as a GeoDataFrame and uses geopandas to
-    calulate a convex hull from the geometries
-    :param args:
-    :param kwargs:
+    calculate a convex hull from the geometries
+    :param arg1: A GeoDataFrame or Vector object specifying source points we intend to buffer
+    :param points: A keyword specification for our first positional argument
     :return: GeoDataFrame
     """
     try:
@@ -176,13 +176,16 @@ def _local_convex_hull(*args, **kwargs):
     # GeoPandasDataframe->convex_hull()
     return _points.convex_hull()
 
+
 def _local_fuzzy_convex_hull(*args, **kwargs):
     """
     Accepts a GeoDataFrame containing points, buffers the point geometries by some distance,
     and than builds convex hulls from point clusters
-    :param args:
-    :param kwargs:
-    :return:
+    :param arg1: A GeoDataFrame or Vector object specifying source points we intend to buffer
+    :param arg2: An integer value (in meters) specifying the radius we wish to buffer point features by
+    :param points: Keyword argument for arg1
+    :param width: Keyword argument for arg2
+    :return: GeoDataFrame
     """
     # args[0] / points=
     try:
@@ -244,33 +247,40 @@ def fuzzy_convex_hull(*args, **kwargs):
     """
     Fuzzy convex hull wrapper function that will call either a local or earth engine
     implementation of the Carter fuzzy convex hull generator. Currently only a local
-    version of this is really implemented, however
-    :param args:
-    :param kwargs:
-    :return:
+    version of this is implemented.
+    :param arg1: A GeoDataFrame or Vector object specifying source points we intend to buffer
+    :param arg2: An integer value (in meters) specifying the radius we wish to buffer point features by
+    :param arg3: A string value specifying which backend ('local'/'ee') we wish to use
+    :param points: Keyword specification for first positional arg
+    :param width: Keyword specification for second positional arg
+    :param backend: Keyword specification for third positional arg
+    :return: GeoDataFrame
     """
     # args[0]/points=
     try:
         _points = args[0]
     except IndexError:
-        _points = kwargs.get('points', None)
-        if _points is None:
+        if kwargs.get('points', False):
+            _points = kwargs.get('points')
+        else:
             raise IndexError("invalid points= argument")
     # args[1]/width=
     try:
         _width = args[1]
     except IndexError:
-        _width = kwargs.get('width', None)
-        if _width is None:
+        if kwargs.get('width', False):
+            _width = kwargs.get('width')
+        else:
             raise IndexError("invalid buffer width= argument.")
     # args[2]/backend=
     try:
         _backend = args[2]
     except IndexError:
+        # fallback to local by default if a backend wasn't specified
         _backend = kwargs.get('backend', 'local')
-    # context runner
+    # launch our context runner
     if _backend.lower().find('local') != -1:
-        return _local_fuzzy_convex_hull(_points, _width)
+        return _local_fuzzy_convex_hull(points=_points, width=_width)
     elif _backend.lower().find('ee') != -1:
         raise BaseException("Earth Engine interface not yet implemented")
     else:
