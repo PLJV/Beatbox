@@ -28,6 +28,7 @@ _ARRAY_MAX = 800 # maximum array length to attempt numpy operations on before ch
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def _chunks(*args):
     """
     Hidden function that will accept an array (list) and split it up into
@@ -238,3 +239,23 @@ def _local_fuzzy_convex_hull(*args, **kwargs):
                        "point features is <1, this shouldn't happen.")
     return gdf
 
+
+def fuzzy_convex_hull(*args, **kwargs):
+    """
+    Fuzzy convex hull wrapper function that will call either a local or earth engine
+    implementation of the Carter fuzzy convex hull generator. Currently only a local
+    version of this is really implemented, however
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    try:
+        _backend = args[len(args)]
+    except IndexError:
+        _backend = kwargs.get('backend', 'local')
+    if _backend.lower().find('local') != -1:
+        return _local_fuzzy_convex_hull(args, kwargs)
+    elif _backend.lower().find('ee') != -1:
+        raise BaseException("Earth Engine interface not yet implemented")
+    else:
+        raise BaseException("Unknown backend type specified")
