@@ -249,12 +249,28 @@ def fuzzy_convex_hull(*args, **kwargs):
     :param kwargs:
     :return:
     """
+    # args[0]/points=
     try:
-        _backend = args[len(args)]
+        _points = args[0]
+    except IndexError:
+        _points = kwargs.get('points', None)
+        if _points is None:
+            raise IndexError("invalid points= argument")
+    # args[1]/width=
+    try:
+        _width = args[1]
+    except IndexError:
+        _width = kwargs.get('width', None)
+        if _width is None:
+            raise IndexError("invalid buffer width= argument.")
+    # args[2]/backend=
+    try:
+        _backend = args[2]
     except IndexError:
         _backend = kwargs.get('backend', 'local')
+    # context runner
     if _backend.lower().find('local') != -1:
-        return _local_fuzzy_convex_hull(args, kwargs)
+        return _local_fuzzy_convex_hull(_points, _width)
     elif _backend.lower().find('ee') != -1:
         raise BaseException("Earth Engine interface not yet implemented")
     else:
