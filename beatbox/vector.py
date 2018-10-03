@@ -434,7 +434,7 @@ def rebuild_crs(*args, **kwargs):
     :return:
     """
     try:
-        _backend = args[len(args)]
+        _backend = args[1]
     except IndexError:
         _backend = kwargs.get('backend', 'local')
     if _backend.lower().find('local') != -1:
