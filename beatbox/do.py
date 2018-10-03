@@ -14,15 +14,16 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class Do(object):
     def __init__(self, *args):
         """
         Do is a dictcomp interface for performing arbitrary spatial tasks with Vector and Raster objects
         :param args:
         """
-        self._run = []
-        self._what = []
-        self._with = []
+        self._what = None
+        self._with = None
+        self._backend = None
         try:
             self.run = args[0]
         except AttributeError:
@@ -30,12 +31,21 @@ class Do(object):
                                  "is an attributed python dictionary. Is the object you passed "
                                  "something else?")
 
-    def _check_backend(self, *args):
+    def _guess_backend(self):
         """
         Parse the parameters specified by 'what' to determine whether this should run locally or on
-        Earth Engine. Will set optional values for 'with' explicitly
+        Earth Engine.
         :param args:
-        :return:
+        :return: None
+        """
+        pass
+
+    def _unpack_with_arguments(self):
+        """
+        The what arguments specified by the user can be pass as a dictionary or as a list. This
+        method will unpack user-specified 'with' arguments so that they can be handled by a user-specified
+        'what' function
+        :return: None
         """
         pass
 
@@ -44,9 +54,9 @@ class Do(object):
         """
         Get method that will call our user-supplied run function
         :param args:
-        :return:
+        :return: Result of a what function
         """
-        return self._run(self._with)
+        return self._what(self._with)
 
     @run.setter
     def run(self, *args):
@@ -59,13 +69,12 @@ class Do(object):
         :return:
         """
         try:
-            self._run = args[0]['run']
             self._what = args[0]['what']
-            self._with = args[0]['with']  # allow the user to set the backend explicitly
-        except Exception as e:
-            raise e
+            self._with = args[0]['with']
+        except KeyError or IndexError as e:
+            raise KeyError("run= accepts a dict as a single positional argument specifying "
+                           "'what' and 'with' keys")
+
         # determine what backend to use (or if the user specified
         # backend is inappropriate for the given data)
-        self._check_backend()
-        # launch our run function
-        return self.run
+        self._guess_backend()
