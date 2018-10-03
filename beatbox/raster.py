@@ -174,11 +174,11 @@ def _local_binary_reclassify(*args, **kwargs):
     except IndexError:
         IndexError("invalid invert= argument supplied by user")
     return numpy.reshape(
-        numpy._array(
-            numpy.in1d(_raster._array, _match, assume_unique=True, invert=_invert),
+        numpy.array(
+            numpy.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
             dtype='uint8'
         ),
-        _raster._array.shape
+        _raster.array.shape
     )
 
 
@@ -188,18 +188,28 @@ def _local_reclassify(*args, **kwargs):
 
 def _local_crop(*args, **kwargs):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
-    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
-    _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
     try:
-        return _raster.to_georaster().gr.clip(_shape)
-    except Exception as e:
-        raise e
+        _raster = kwargs.get('raster', args[0])
+    except IndexError:
+        raise IndexError("invalid raster= argument specified")
+    try:
+        _shape = kwargs.get('shape', args[1])
+    except IndexError:
+        raise IndexError("invalid shape=argument specified")
+    return _raster.to_georaster().gr.clip(_shape)
+
 
 
 def _local_clip(*args, **kwargs):
     """clip is a hold-over from gr that performs a crop operation"""
-    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
-    _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
+    try:
+        _raster = kwargs.get('raster', args[0])
+    except IndexError:
+        raise IndexError("invalid raster= argument specified")
+    try:
+        _shape = kwargs.get('shape', args[1])
+    except IndexError:
+        raise IndexError("invalid shape= argument specified")
     return _local_crop(raster=_raster, shape=_shape)
 
 def _ee_extract(*args, **kwargs):
@@ -239,53 +249,72 @@ def _local_reproject(*args, **kwargs):
 
 def _local_merge(*args, **kwargs):
     """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
-    _rasters = kwargs.get('rasters', args[0]) if kwargs.get('raster', args[0]) is not None else None
     try:
-        return gr.merge(_rasters)
-    except Exception as e:
-        raise e
+        _rasters = kwargs.get('rasters', args[0])
+    except IndexError:
+        raise IndexError("invalid raster= argument specified")
+    return gr.merge(_rasters)
+
 
 
 def _local_split(*args, **kwargs):
     """Stump for numpy._array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation."""
-    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
-    _n = kwargs.get('n', args[1]) if kwargs.get('n', args[1]) is not None else None
-    return numpy._array_split(
-        numpy._array(_raster._array,dtype=str(_raster._array.data.dtype)),
+    try:
+        _raster = kwargs.get('raster', args[0])
+    except IndexError:
+        raise IndexError("invalid raster= argument specified")
+    try:
+        _n = kwargs.get('n', args[1])
+    except IndexError:
+        raise IndexError("invalid n= argument specified")
+    return numpy.array_split(
+        numpy.array(_raster.array, dtype=str(_raster.array.data.dtype)),
         _n
     )
 
 def _ram_sanity_check(*args, **kwargs):
     """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
     between your available ram and your proposed operation(s). Negatives are bad. """
-    _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
-    _dtype = kwargs.get('dtype', args[1]) if kwargs.get('dtype', args[1]) is not None else None
-    _nOperation = kwargs.get('nOperation', args[2]) if kwargs.get('nOperation', args[2]) is not None else None
-    _asGigabytes = kwargs.get('asGigabytes', args[3]) if kwargs.get('asGigabytes', args[3]) is not None else True
+    try:
+        _raster = kwargs.get('raster', args[0])
+    except IndexError:
+        raise IndexError("invalid raster= argument specified")
+    try:
+        _dtype = kwargs.get('dtype', args[1])
+    except IndexError:
+        raise IndexError("invalid dtype= argument specified")
+    try:
+        _nOperation = kwargs.get('nOperation', args[2])
+    except IndexError:
+        raise IndexError("invalid nOperation= argument specified")
+    try:
+        _as_gigabytes = kwargs.get('as_gigabytes', args[3])
+    except IndexError:
+        raise IndexError("invalid as_gigabytes= argument specified")
     try:
         if _dtype is None:
-            _dtype = _raster._array.dtype
+            _dtype = _raster.array.dtype
     except Exception as e:
         raise e
-    return _get_free_ram(asGigabytes=_asGigabytes) - _est_ram_usage(
-        _raster._array.shape,
+    return _get_free_ram(as_gigabytes=_as_gigabytes) - _est_ram_usage(
+        _raster.array.shape,
         dtype=_dtype,
-        nOperations=_nOperation,
-        asGigabytes=_asGigabytes
+        n_operations=_nOperation,
+        as_gigabytes=_as_gigabytes
     )
 
 
-def _get_free_ram(asGigabytes=True):
+def _get_free_ram(as_gigabytes=True):
     """ determine the amount of free memory available on the current node
     """
-    if asGigabytes:
+    if as_gigabytes:
         return psutil.virtual_memory().available * 10**-9
     else:
         return psutil.virtual_memory().available
 
 
-def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
+def _est_ram_usage(dim=None, dtype=None, n_operations=None, as_gigabytes=True):
     """ estimate the RAM usage for an array object
     arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
     """
@@ -314,12 +343,12 @@ def _est_ram_usage(dim=None, dtype=None, nOperations=None, asGigabytes=True):
     except Exception as e:
         raise e
 
-    if not nOperations: # exponential heuristic for a wild-assed estimate of ram utilization across n operations
-        nOperations=1
+    if not n_operations: # exponential heuristic for a wild-assed estimate of ram utilization across n operations
+        n_operations=1
 
-    if(asGigabytes):
-        asGigabytes = 10**-9
+    if as_gigabytes:
+        as_gigabytes = 10**-9
     else:
-        asGigabytes = 1
+        as_gigabytes = 1
 
-    return (dim * numpy.nbytes[dtype] * asGigabytes) ** nOperations
+    return (dim * numpy.nbytes[dtype] * as_gigabytes) ** n_operations

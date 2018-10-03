@@ -55,13 +55,10 @@ def _dissolve_overlapping_geometries(*args, **kwargs):
     """
     # args[0] / buffers=
     try:
-        _buffers = args[0]
+        _buffers = kwargs.get('buffers', args[0])
     except IndexError:
-        if kwargs.get('buffers', False):
-            _buffers = kwargs.get('buffers')
-        else:
-            raise IndexError("invalid buffers= "
-                             "argument provided by user")
+        raise IndexError("invalid buffers= "
+                         "argument provided by user")
     # force casting as a GeoDataFrame
     try:
         _buffers = gp.GeoDataFrame({
@@ -127,20 +124,14 @@ def _attribute_by_overlap(*args, **kwargs):
     """
     # args[0] / buffers=
     try:
-        _buffers = args[0]
+        _buffers = kwargs.get('buffers', args[0])
     except IndexError:
-        if kwargs.get('buffers', False):
-            _buffers = kwargs.get('buffers')
-        else:
-           raise IndexError("invalid buffers= argument provided by user")
+        raise IndexError("invalid buffers= argument provided by user")
     # args[1] / points=
     try:
-        _points = args[1]
+        _points = kwargs.get('points', args[1])
     except IndexError:
-        if kwargs.get('points', False):
-            _points = kwargs.get('points')
-        else:
-            raise IndexError("invalid points= argument provided by user")
+        raise IndexError("invalid points= argument provided by user")
     # dissolve-by explode
     gdf_out = _dissolve_overlapping_geometries(_buffers)
     # return the right-sided spatial join
@@ -158,12 +149,9 @@ def _local_convex_hull(*args, **kwargs):
     :return: GeoDataFrame
     """
     try:
-        _points = args[0]
+        _points = kwargs.get('points', args[0])
     except IndexError:
-        if kwargs.get('points', False):
-            _points = kwargs.get('points')
-        else:
-            raise IndexError("invalid points= argument provided by user")
+        raise IndexError("invalid points= argument provided by user")
     # try and process our lone 'points' argument
     attr_err_msg = "points= input is invalid. try passing" \
                    " a GeoDataFrame or Vector object."
@@ -189,20 +177,14 @@ def _local_fuzzy_convex_hull(*args, **kwargs):
     """
     # args[0] / points=
     try:
-        _points = args[0]
+        _points = kwargs.get('points', args[0])
     except IndexError:
-        if kwargs.get('points', False):
-            _points = kwargs.get('points')
-        else:
-            raise IndexError("invalid points= argument passed by user")
+        raise IndexError("invalid points= argument passed by user")
     # args[1] / width=
     try:
-        _width = args[1]
+        _width = kwargs.get('width', args[1])
     except IndexError:
-        if kwargs.get('width', False):
-            _width = kwargs.get('width')
-        else:
-            _width = _DEFAULT_BUFFER_WIDTH
+        _width = _DEFAULT_BUFFER_WIDTH
     # cast our points features as a gdf (if they aren't already)
     if isinstance(_points, str):
         _points = Vector(_points).to_geodataframe()
@@ -258,20 +240,14 @@ def fuzzy_convex_hull(*args, **kwargs):
     """
     # args[0]/points=
     try:
-        _points = args[0]
+        _points = kwargs.get('points', args[0])
     except IndexError:
-        if kwargs.get('points', False):
-            _points = kwargs.get('points')
-        else:
-            raise IndexError("invalid points= argument")
+        raise IndexError("invalid points= argument")
     # args[1]/width=
     try:
-        _width = args[1]
+        _width = kwargs.get('width', args[1])
     except IndexError:
-        if kwargs.get('width', False):
-            _width = kwargs.get('width')
-        else:
-            raise IndexError("invalid buffer width= argument.")
+        raise IndexError("invalid buffer width= argument.")
     # args[2]/backend=
     try:
         _backend = args[2]
