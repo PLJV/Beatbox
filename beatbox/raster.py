@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
 try:
     import ee
     ee.Initialize()
+    _HAVE_EE = True
 except Exception:
+    _HAVE_EE = False
     logger.warning("Failed to load the Earth Engine API. "
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
@@ -95,15 +97,14 @@ class Raster(object):
         except IndexError:
             raise
         # grab raster meta information from GeoRasters
-        self._ndv, _x_size, _y_size, self._geot, self._projection, datatype = gr.get_geo_info(_file)
+        self._ndv, _x_size, _y_size, self._geot, self._projection, datatype = \
+            gr.get_geo_info(_file)
         if self._ndv is None:
             self._ndv = _DEFAULT_NA_VALUE
 
         self._array = gdalnumeric.LoadFile(self._filepath)
-        self.y_cell_size = self._geot[1]
-        self.x_cell_size = self._geot[5]
-        # we store the the actual raw array
-        # values as a numpy masked array
+
+        # store array values as a numpy masked array
         self._array = numpy.ma.masked_array(
             self._array,
             mask=self._array == self._ndv,
@@ -146,8 +147,16 @@ class Raster(object):
     def to_ee_image(self):
         _array = ee._array(self._array)
 
+def extract(*args):
+    """
+    Extract wrapper function that will accept a series of 'with' arguments
+    and use an appropriate backend to perform an extract operation with
+    raster data
+    :param args:
+    :return:
+    """
 
-def _generic_binary_reclassify(*args, **kwargs):
+def _local_binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
     self._array are reclassified as uint8(boolean) based on whether they
     match or do not match the values of an input match array.
@@ -173,11 +182,11 @@ def _generic_binary_reclassify(*args, **kwargs):
     )
 
 
-def _generic_reclassify(*args, **kwargs):
+def _local_reclassify(*args, **kwargs):
     pass
 
 
-def _generic_crop(*args, **kwargs):
+def _local_crop(*args, **kwargs):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
@@ -187,16 +196,23 @@ def _generic_crop(*args, **kwargs):
         raise e
 
 
-def _generic_clip(*args, **kwargs):
+def _local_clip(*args, **kwargs):
     """clip is a hold-over from gr that performs a crop operation"""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None
     _shape = kwargs.get('shape', args[1]) if kwargs.get('shape', args[1]) is not None else None
-    return _generic_crop(raster=_raster, shape=_shape)
+    return _local_crop(raster=_raster, shape=_shape)
 
-
-def _generic_extract(*args, **kwargs):
+def _ee_extract(*args, **kwargs):
     """
-    generic raster extraction handler
+    Earth Engine extract handler
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+def _local_extract(*args, **kwargs):
+    """
+    local raster extraction handler
     :param args:
     :param kwargs:
     :return:
@@ -211,12 +227,17 @@ def _ee_extract(*args, **kwargs):
     :param kwargs:
     :return:
     """
-
-def _generic_reproject(*args, **kwargs):
+    if not _HAVE_EE:
+        raise AttributeError("Requested Earth Engine functionality, "
+                             "but we failed to load and initialize the ee package.")
     pass
 
 
-def _generic_merge(*args, **kwargs):
+def _local_reproject(*args, **kwargs):
+    pass
+
+
+def _local_merge(*args, **kwargs):
     """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
     _rasters = kwargs.get('rasters', args[0]) if kwargs.get('raster', args[0]) is not None else None
     try:
@@ -225,7 +246,7 @@ def _generic_merge(*args, **kwargs):
         raise e
 
 
-def _generic_split(*args, **kwargs):
+def _local_split(*args, **kwargs):
     """Stump for numpy._array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation."""
     _raster = kwargs.get('raster', args[0]) if kwargs.get('raster', args[0]) is not None else None

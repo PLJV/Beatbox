@@ -16,7 +16,7 @@ import numpy as np
 import geopandas as gp
 import fiona
 
-from beatbox.vector import Vector, _rebuild_crs
+from beatbox.vector import Vector, _local_rebuild_crs
 
 from copy import copy
 from scipy.sparse.csgraph import connected_components
@@ -203,7 +203,7 @@ def fuzzy_convex_hulls(*args, **kwargs):
     if isinstance(_points, str):
         _points = Vector(_points).to_geodataframe()
     # reproject to something that uses metric units
-    _points = _rebuild_crs(_points)
+    _points = _local_rebuild_crs(_points)
     _points = _points.to_crs(epsg=_DEFAULT_EPSG)
     # generate circular point buffers around our SpatialPoints features
     try:

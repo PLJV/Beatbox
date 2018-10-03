@@ -392,6 +392,7 @@ class Vector(object):
 
         return feature_collection
 
+
 def _geom_units(*args):
     # args[0]
     try:
@@ -418,10 +419,12 @@ def _geom_units(*args):
         else:
             return _units
 
-def _rebuild_crs(*args):
+
+def _local_rebuild_crs(*args):
     _gdf = args[0]
     _gdf.crs = fiona.crs.from_epsg(int(_gdf.crs['init'].split(":")[1]))
     return _gdf
+
 
 def is_json(*args, **kwargs):
     try:

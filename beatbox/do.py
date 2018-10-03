@@ -26,10 +26,9 @@ class Do(object):
         self._backend = None
         try:
             self.run = args[0]
-        except AttributeError:
-            raise AttributeError("Failed to run Do action. Do assumes that the input provided "
-                                 "is an attributed python dictionary. Is the object you passed "
-                                 "something else?")
+        except IndexError:
+            # allow empty class specification, e.g. for copy() and deepcopy()
+            pass
 
     def _guess_backend(self):
         """
@@ -56,6 +55,9 @@ class Do(object):
         :param args:
         :return: Result of a what function
         """
+        # if we haven't already specified our 'what' and 'with' parameters
+        if self._what is None or self._with is None:
+            raise AttributeError("'what' and 'with' parameters are undefined.")
         return self._what(self._with)
 
     @run.setter
@@ -74,7 +76,7 @@ class Do(object):
         except KeyError or IndexError as e:
             raise KeyError("run= accepts a dict as a single positional argument specifying "
                            "'what' and 'with' keys")
-
         # determine what backend to use (or if the user specified
         # backend is inappropriate for the given data)
+        self._unpack_with_arguments()
         self._guess_backend()
