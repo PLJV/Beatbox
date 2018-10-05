@@ -9,14 +9,17 @@ __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
+import sys
 import numpy as np
 import georasters as gr
 import gdalnumeric
-import gdal
-import psutil
 import logging
 from copy import copy
 
+import types
+import psutil
+
+import gdal
 from osgeo import gdal_array
 
 _DEFAULT_NA_VALUE = 0
@@ -36,6 +39,19 @@ except Exception:
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
 
+str_to_numpy_types = {
+  "uint8": np.uint8,
+  "int8": np.uint8,
+  "byte": np.int8,
+  "uint16": np.uint16,
+  "int16": np.int16,
+  "uint32": np.uint32,
+  "int32": np.int32,
+  "float32": np.float32,
+  "float64": np.float64,
+  "complex64": np.complex64,
+  "complex128": np.complex128,
+}
 
 class Raster(object):
     """
@@ -194,6 +210,7 @@ class Raster(object):
     def to_ee_image(self):
         return ee.array(self.array)
 
+
 def extract(*args):
     """
     Extract wrapper function that will accept a series of 'with' arguments
@@ -202,6 +219,7 @@ def extract(*args):
     :param args:
     :return:
     """
+
 
 def _local_binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
@@ -240,14 +258,31 @@ def _local_binary_reclassify(*args, **kwargs):
             _dtype = args[3]
         except IndexError:
             _dtype = np.uint8
-    return np.reshape(
-        np.array(
-            np.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
-            dtype=_dtype
-        ),
-        _raster.array.shape
-    )
-
+    # if this is a complete GeoRaster, try
+    # to process the whole object
+    if isinstance(_raster, gr.GeoRaster):
+        return np.reshape(
+            np.array(
+                np.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
+                dtype=_dtype
+            ),
+            _raster.array.shape
+        )
+    # if this is a big raster that we've split into chunks
+    # process this piece-wise
+    elif isinstance(_raster, types.GeneratorType):
+        return np.concatenate(
+            [np.reshape(
+                np.array(
+                    np.in1d(d[0], _match, assume_unique=True, invert=_invert),
+                    dtype=_dtype
+                ),
+                (1, d.shape[1]) # array shape tuple (1,1111)
+             )
+             for i, d in enumerate(_raster)]
+        )
+    else:
+        raise ValueError("raster= input should be a GeoRaster or Generator that numpy can work with")
 
 def _local_reclassify(*args, **kwargs):
     pass
@@ -326,7 +361,9 @@ def _local_reproject(*args, **kwargs):
 
 
 def _local_merge(*args, **kwargs):
-    """Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations."""
+    """
+    Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations.
+    """
     try:
         if kwargs.get('rasters', None) is not None:
             _rasters = kwargs.get('rasters')
@@ -339,8 +376,10 @@ def _local_merge(*args, **kwargs):
 
 
 def _local_split(*args, **kwargs):
-    """Stump for np._array_split. splits an input array into n (mostly) equal segments,
-    possibly for a future parallel operation."""
+    """
+    Stump for np._array_split. splits an input array into n (mostly) equal segments,
+    possibly for a future parallel operation.
+    """
     try:
         if kwargs.get('raster', None) is not None:
             _raster = kwargs.get('raster')
@@ -360,94 +399,66 @@ def _local_split(*args, **kwargs):
         _n
     )
 
-def _ram_sanity_check(*args, **kwargs):
-    """check to see if your environment has enough ram to support a complex raster operation. Returns the difference
-    between your available ram and your proposed operation(s). Negatives are bad. """
+def _local_ram_sanity_check(*args):
+    #args[0] (Raster object, GeoRaster, or numpy array)
     try:
-        if kwargs.get('raster', None) is not None:
-            _raster = kwargs.get('raster')
-        else:
-            _raster = args[0]
+        _array = args[0]
     except IndexError:
-        raise IndexError("invalid raster= argument specified")
-    try:
-        if kwargs.get('dtype', None) is not None:
-            _dtype = kwargs.get('dtype')
-        else:
-            _dtype = args[1]
-    except IndexError:
-        raise IndexError("invalid dtype= argument specified")
-    try:
-        if kwargs.get('n_operation', None) is not None:
-            _n_operations = kwargs.get('n_operations')
-        else:
-            _n_operations = args[2]
-    except IndexError:
-        raise IndexError("invalid n_operation= argument specified")
-    try:
-        if kwargs.get('as_gigabytes', None) is not None:
-            _as_gigabytes = kwargs.get('as_gigabytes')
-        else:
-            _as_gigabytes = args[3]
-    except IndexError:
-        raise IndexError("invalid as_gigabytes= argument specified")
-    try:
-        if _dtype is None:
-            _dtype = _raster.array.dtype
-    except Exception as e:
-        raise e
-    return _get_free_ram(as_gigabytes=_as_gigabytes) - _est_ram_usage(
-        _raster.array.shape,
-        dtype=_dtype,
-        n_operations=_n_operations,
-        as_gigabytes=_as_gigabytes
-    )
+        raise IndexError("first pos. argument should be some kind of raster data")
 
-
-def _get_free_ram(as_gigabytes=True):
-    """ determine the amount of free memory available on the current node
+def _est_free_ram():
     """
-    if as_gigabytes:
-        return psutil.virtual_memory().available * 10**-9
-    else:
-        return psutil.virtual_memory().available
-
-
-def _est_ram_usage(dim=None, dtype=None, n_operations=None, as_gigabytes=True):
-    """ estimate the RAM usage for an array object
-    arg dim: can be a Raster object, or a scalar or vector array specifying the dimensions of a numpy array (e.g., n=3;n=[3,2,1])
+    Shorthand for psutil that will determine the amount of free ram
+    available for an operation. This is typically used in conjunction
+    with _est_array_size() or as a precursor to raising MemoryError
+    when working with large raster datasets
+    :return: int (free ram measured in bytes)
     """
-    try:
-        dtype = dim._array.dtype
-        dim = dim._array.shape
-    except AttributeError as e:
-        if 'raster' in str(e):
-            try:  # sometimes est_ram_usage will be expected to accept a raw numpy array, rather than a Raster
-                dtype = dim.dtype
-                dim = dim.shape
-            except AttributeError as e:
-                pass  # assume this is a scalar
-            except Exception as e:
-                raise e
-    except Exception as e:
-        raise e
+    return psutil.virtual_memory().free
 
-    try:
-        dim = dim ** 2
-    except TypeError as e:
-        try:
-            dim = np.prod(dim)  # maybe this is a list?
-        except Exception as e:
-            raise e
-    except Exception as e:
-        raise e
+def _est_array_size(*args, **kwargs):
+    """
 
-    if not n_operations: # exponential heuristic for a wild-assed estimate of ram utilization across n operations
-        n_operations=1
-
-    if as_gigabytes:
-        as_gigabytes = 10**-9
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    _obj = args[0]
+    _byte_size = None
+    # args[0] is a list containing array dimensions
+    if isinstance(_obj, list) or isinstance(_obj, tuple):
+        _array_len = np.prod(_obj)
+    # args[0] is a GeoRaster object
+    elif isinstance(_obj, gr.GeoRaster):
+        _array_len = np.prod(_obj.shape)
+        _byte_size = str_to_numpy_types[_obj.datatype.lower()](1)
+    # args[0] is a Raster object
+    elif isinstance(_obj, Raster):
+        _array_len = np.prod(_obj.array.shape)
+        _byte_size = str_to_numpy_types[_obj.array.dtype.lower()](1)
+    # args[0] is something else?
     else:
-        as_gigabytes = 1
+        _array_len = len(_obj)
+    # args[1]/dtype= argument was specified
+    try:
+        _byte_size = str_to_numpy_types[args[1].lower()](1)
+    except IndexError:
+        if kwargs.get("dtype", None) is not None:
+            _byte_size = str_to_numpy_types[kwargs.get("dtype").lower()](1)
+        elif _byte_size is None:
+            raise IndexError("invalid dtype= argument specified")
+    return _array_len * sys.getsizeof(_byte_size)
 
-    return (dim * np.nbytes[dtype] * as_gigabytes) ** n_operations
+
+def _local_process_array_as_blocks(*args):
+    """
+    Accepts
+    :param args:
+    :return:
+    """
+    _array = args[0].raster   # numpy array
+    _rows = _array.shape[0]   # rows in array
+    _n_chunks = 1             # how many blocks (rows) per chunk?
+    """Yield successive n-sized chunks from 0-to-nrow."""
+    for i in range(0, _rows, _n_chunks):
+        yield _array[i:i + _n_chunks]
