@@ -9,18 +9,23 @@ __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
-import sys
+# mmap file caching and file handling
+import sys, os
+from tempfile import mkdtemp
+from random import randint
+# raster manipulation
 import numpy as np
 import georasters as gr
 import gdalnumeric
-import logging
-from copy import copy
-
-import types
-import psutil
-
 import gdal
 from osgeo import gdal_array
+# logging
+import logging
+# deep copy
+from copy import copy
+# memory profiling
+import types
+import psutil
 
 _DEFAULT_NA_VALUE = 0
 _DEFAULT_PRECISION = np.uint16
@@ -67,6 +72,7 @@ class Raster(object):
         self.backend = "local" # By default, assume that we are working with raster data locally
         self.array = None
         self.filename = None
+        self._use_disc_caching = None # Use mmcache?
         # Public properties for GeoRaster compatibility and exposure to user
         self.ndv = None          # no data value
         self.x_cell_size = None  # cell size of x (meters/degrees)
@@ -97,6 +103,16 @@ class Raster(object):
                 _dtype = args[2]
             except IndexError:
                 _dtype = _DEFAULT_PRECISION
+        # args[3]/disc_cache=
+        if kwargs.get('disc_cache', None) is not None:
+            self._use_disc_caching = kwargs.get('disc_cache')
+        else:
+            try:
+                if args[3] is not None:
+                    self._use_disc_caching = str(randint(1, 9999999999)) + \
+                                             '_np_binary_array.dat'
+            except IndexError:
+                self._use_disc_caching = None
         # if we were passed a file argument, assume it's a
         # path and try to open it
         if self.filename is not None:
@@ -109,6 +125,14 @@ class Raster(object):
         _raster = Raster()
         _raster._array = copy(self._array)
         _raster._backend = copy(self._backend)
+        _raster._filename = copy(self._filename)
+        _raster._use_disc_caching = copy(self._filename)
+        _raster.ndv = self.ndv
+        _raster.x_cell_size = self.x_cell_size
+        _raster.y_cell_size = self.y_cell_size
+        _raster.geot = self.geot
+        _raster.projection = self.projection
+        # if we are mem caching, generate a new tempfile
         return _raster
 
     def __deepcopy__(self, memodict={}):
@@ -153,8 +177,11 @@ class Raster(object):
             except IndexError:
                 raise IndexError("invalid file= argument provided")
         # grab raster meta information from GeoRasters
-        self.ndv, _x_size, _y_size, self.geot, self.projection, _datatype = \
-            gr.get_geo_info(_file)
+        try:
+            self.ndv, _x_size, _y_size, self.geot, self.projection, _datatype = \
+                gr.get_geo_info(_file)
+        except Exception:
+            raise AttributeError("problem processing file input -- is this a raster file?")
         # args[1]/dtype=
         if kwargs.get('dtype') is not None:
             _dtype = kwargs.get('dtype')
@@ -165,12 +192,18 @@ class Raster(object):
                 _dtype = _datatype
         if self.ndv is None:
             self.ndv = _DEFAULT_NA_VALUE
-
+        # low-level call to gdal with explicit type specification
+        # that will store in memory or as a disc cache, depending
+        # on the state of our _use_disc_caching property
+        if self._use_disc_caching is not None:
+            self.array = np.memmap(
+                self._use_disc_caching, dtype=_dtype, mode='w+', shape=(_x_size, _y_size)
+            )
+        # self.array here can be either a memmap object or undefined
         self.array = gdalnumeric.LoadFile(
             filename=self.filename,
             buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
         )
-
         # store array values as a numpy masked array
         self.array = np.ma.masked_array(
             self.array,
@@ -190,13 +223,16 @@ class Raster(object):
             name=dst_filename,
             Array=self.array,
             geot=self.geot,
-            projection=self._projection,
+            projection=self.projection,
             datatype=format,
             driver=driver,
             ndv=self.ndv,
             xsize=self.x_cell_size,
             ysize=self.y_cell_size
         )
+
+    def to_numpy_array(self):
+        return self.array
 
     def to_georaster(self):
         return gr.GeoRaster(
@@ -277,7 +313,7 @@ def _local_binary_reclassify(*args, **kwargs):
                     np.in1d(d[0], _match, assume_unique=True, invert=_invert),
                     dtype=_dtype
                 ),
-                (1, d.shape[1]) # array shape tuple (1,1111)
+                (1, d.shape[1]) # array shape tuple e.g., (1,1111)
              )
              for i, d in enumerate(_raster)]
         )
@@ -290,6 +326,7 @@ def _local_reclassify(*args, **kwargs):
 
 def _local_crop(*args, **kwargs):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
+    # args[0] / raster=
     try:
         if kwargs.get('raster', None) is not None:
             _raster = kwargs.get('raster')
@@ -297,6 +334,7 @@ def _local_crop(*args, **kwargs):
             _raster = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
+    # args[1] / shape=
     try:
         if kwargs.get('shape', None) is not None:
             _shape = kwargs.get('shape')
@@ -304,6 +342,14 @@ def _local_crop(*args, **kwargs):
             _shape = args[1]
     except IndexError:
         raise IndexError("invalid shape=argument specified")
+   # sanity check and then do our crop operation
+   # and return to user
+    _enough_ram = _local_ram_sanity_check(_raster.array)
+    if not _enough_ram['available'] and not _raster._use_disc_caching:
+        logger.warning(" There doesn't apprear to be enough free memory"
+                       " available for our raster operation. You should use"
+                       "disc caching options with your dataset. Est Megabytes "
+                       "needed: %s", -1*_enough_ram['bytes']*0.0000001)
     return _raster.to_georaster().gr.clip(_shape)
 
 
@@ -399,12 +445,20 @@ def _local_split(*args, **kwargs):
         _n
     )
 
+
 def _local_ram_sanity_check(*args):
     #args[0] (Raster object, GeoRaster, or numpy array)
     try:
         _array = args[0]
     except IndexError:
         raise IndexError("first pos. argument should be some kind of raster data")
+
+    _cost = _est_free_ram - _est_array_size(_array)
+
+    return {
+        'available': bool(_cost>0),
+        'bytes': int(_cost)
+    }
 
 def _est_free_ram():
     """
@@ -415,6 +469,7 @@ def _est_free_ram():
     :return: int (free ram measured in bytes)
     """
     return psutil.virtual_memory().free
+
 
 def _est_array_size(*args, **kwargs):
     """

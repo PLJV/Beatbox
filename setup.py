@@ -14,7 +14,7 @@ from shutil import copyfile
 
 INSTALL_REQUIRES = [
     'scipy', 'pandas', 'shapely', 'fiona', 'pyproj', 'geopandas',
-    'georasters', 'psutil', 'requests', 'bs4', 'gdal', 'numpy', 'utils'
+    'georasters', 'psutil', 'requests', 'bs4', 'gdal', 'numpy'
 ]
 
 LONG_DESCRIPTION = ""

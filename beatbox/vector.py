@@ -33,7 +33,7 @@ try:
     import ee
     ee.Initialize()
 except Exception:
-    logger.warning("Failed to load the Earth Engine API. "
+    logger.warning(" Failed to load the Earth Engine API. "
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
 
@@ -338,6 +338,13 @@ class Vector(object):
                            "will try to read from original source file instead")
             _gdf = gp.read_file(self._filename)
         return _gdf
+
+    def to_geopandas(self):
+        """
+        Shorthand to to_geodataframe()
+        :return:
+        """
+        return self.to_geodataframe()
 
     def to_ee_feature_collection(self):
         return ee.FeatureCollection(self.to_geojson(stringify=True))
