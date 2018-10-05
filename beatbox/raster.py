@@ -196,9 +196,15 @@ class Raster(object):
         # that will store in memory or as a disc cache, depending
         # on the state of our _use_disc_caching property
         if self._use_disc_caching is not None:
+            # create a cache file
             self.array = np.memmap(
                 self._use_disc_caching, dtype=_dtype, mode='w+', shape=(_x_size, _y_size)
             )
+            # load file contents into cache
+            self.array[:] = gdalnumeric.LoadFile(
+                filename=self.filename,
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
+            )[:]
         # self.array here can be either a memmap object or undefined
         self.array = gdalnumeric.LoadFile(
             filename=self.filename,
