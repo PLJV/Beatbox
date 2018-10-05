@@ -9,13 +9,18 @@ __maintainer__ = "Kyle Taylor"
 __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
-import numpy
+import numpy as np
 import georasters as gr
 import gdalnumeric
 import gdal
 import psutil
 import logging
 from copy import copy
+
+from osgeo import gdal_array
+
+_DEFAULT_NA_VALUE = 0
+_DEFAULT_PRECISION = np.uint16
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,8 +36,6 @@ except Exception:
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
 
-_DEFAULT_NA_VALUE = -9999
-
 
 class Raster(object):
     """
@@ -45,37 +48,46 @@ class Raster(object):
     :return None
     """
     def __init__(self, *args, **kwargs):
-        """Raster constructor."""
-        self._backend = "local" # By default, assume that we are working with raster data locally
-        self._array = None
-        self._filepath = None
-        # GeoRaster compatibility handlers
-        self._ndv = None          # no data value
-        self._x_cell_size = None  # cell size of x (meters/degrees)
-        self._y_cell_size = None  # cell size of y (meters/degrees)
-        self._geot = None         # geographic transformation
-        self._projection = None   # geographic projection
-        # It's possible we want to initialize an empty class
-        # and our args handlers will pass on relevant exceptions
-        try:
-            self._filepath = kwargs.get('file', args[0])
-        except IndexError:
-            pass
-        try:
-            self._array = kwargs.get('array', args[1])
-        except IndexError:
-            pass
-        try:
-            self._array = kwargs.get('array', args[1])
-        except IndexError:
-            pass
+        self.backend = "local" # By default, assume that we are working with raster data locally
+        self.array = None
+        self.filename = None
+        # Public properties for GeoRaster compatibility and exposure to user
+        self.ndv = None          # no data value
+        self.x_cell_size = None  # cell size of x (meters/degrees)
+        self.y_cell_size = None  # cell size of y (meters/degrees)
+        self.geot = None         # geographic transformation
+        self.projection = None   # geographic projection
+        # args[0]/file=
+        if kwargs.get('file', None) is not None:
+            self.filename = kwargs.get('file')
+        else:
+            try:
+                self.filename = args[0]
+            except IndexError:
+                pass
+        # args[1]/array=
+        if kwargs.get('array', None) is not None:
+            self.array = kwargs.get('array')
+        else:
+            try:
+                self._array = args[1]
+            except IndexError:
+                pass
+        # args[2]/dtype=
+        if kwargs.get('dtype', None) is not None:
+            _dtype = kwargs.get('dtype')
+        else:
+            try:
+                _dtype = args[2]
+            except IndexError:
+                _dtype = _DEFAULT_PRECISION
         # if we were passed a file argument, assume it's a
         # path and try to open it
-        if self._filepath:
+        if self.filename is not None:
             try:
-                self.open(self._filepath)
-            except Exception as e:
-                raise e
+                self.open(self.filename, dtype=_dtype)
+            except OSError:
+                raise OSError("couldn't read filename provided")
 
     def __copy__(self):
         _raster = Raster()
@@ -86,29 +98,68 @@ class Raster(object):
     def __deepcopy__(self, memodict={}):
         return self.__copy__()
 
+    @property
+    def array(self):
+        return self._array
+
+    @array.setter
+    def array(self, *args):
+        self._array = args[0]
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, *args):
+        self._filename = args[0]
+
+    @property
+    def backend(self):
+        return self._backend
+
+    @backend.setter
+    def backend(self, *args):
+        self._backend = args[0]
+
     def open(self, *args, **kwargs):
         """
         Open a local file handle for reading and assignment
         :param file:
         :return: None
         """
-        try:
-            _file = kwargs.get('file', args[0])
-        except IndexError:
-            raise
+        # args[0]/file=
+        if kwargs.get('file') is not None:
+            _file = kwargs.get('file')
+        else:
+            try:
+                _file = args[0]
+            except IndexError:
+                raise IndexError("invalid file= argument provided")
         # grab raster meta information from GeoRasters
-        self._ndv, _x_size, _y_size, self._geot, self._projection, datatype = \
+        self.ndv, _x_size, _y_size, self.geot, self.projection, _datatype = \
             gr.get_geo_info(_file)
-        if self._ndv is None:
-            self._ndv = _DEFAULT_NA_VALUE
+        # args[1]/dtype=
+        if kwargs.get('dtype') is not None:
+            _dtype = kwargs.get('dtype')
+        else:
+            try:
+                _dtype = args[1]
+            except IndexError:
+                _dtype = _datatype
+        if self.ndv is None:
+            self.ndv = _DEFAULT_NA_VALUE
 
-        self._array = gdalnumeric.LoadFile(self._filepath)
+        self.array = gdalnumeric.LoadFile(
+            filename=self.filename,
+            buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
+        )
 
         # store array values as a numpy masked array
-        self._array = numpy.ma.masked_array(
-            self._array,
-            mask=self._array == self._ndv,
-            fill_value=self._ndv
+        self.array = np.ma.masked_array(
+            self.array,
+            mask=self.array == self.ndv,
+            fill_value=self.ndv
         )
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
@@ -119,33 +170,29 @@ class Raster(object):
         :param driver:
         :return:
         """
-        gr.create_geotiff(
+        return gr.create_geotiff(
             name=dst_filename,
-            Array=self._array,
-            geot=self._geot,
+            Array=self.array,
+            geot=self.geot,
             projection=self._projection,
             datatype=format,
             driver=driver,
-            ndv=self._ndv,
-            xsize=self._x_cell_size,
-            ysize=self._y_cell_size
+            ndv=self.ndv,
+            xsize=self.x_cell_size,
+            ysize=self.y_cell_size
         )
 
-    def map_to_disk(self):
-        """map the contents of r._array to disk using numpy.memmap"""
-        pass
-
     def to_georaster(self):
-        return(gr.GeoRaster(
-            self._array,
-            self._geot,
-            nodata_value=self._ndv,
-            projection=self._projection,
-            datatype=self._array.dtype
-        ))
+        return gr.GeoRaster(
+            self.array,
+            self.geot,
+            nodata_value=self.ndv,
+            projection=self.projection,
+            datatype=self.array.dtype
+        )
 
     def to_ee_image(self):
-        _array = ee._array(self._array)
+        return ee.array(self.array)
 
 def extract(*args):
     """
@@ -161,6 +208,7 @@ def _local_binary_reclassify(*args, **kwargs):
     self._array are reclassified as uint8(boolean) based on whether they
     match or do not match the values of an input match array.
     """
+    # args[0]/raster=
     try:
         if kwargs.get('raster', None) is not None:
             _raster = kwargs.get('raster')
@@ -168,6 +216,7 @@ def _local_binary_reclassify(*args, **kwargs):
             _raster = args[0]
     except IndexError:
         IndexError("invalid raster= argument supplied by user")
+    # args[1]/match=
     try:
         if kwargs.get('match', None) is not None:
             _match = kwargs.get('match')
@@ -175,17 +224,26 @@ def _local_binary_reclassify(*args, **kwargs):
             _match =  args[1]
     except IndexError:
         IndexError("invalid match= argument supplied by user")
-    try:
-        if kwargs.get('invert', None) is not None:
-            _invert = kwargs.get('invert')
-        else:
+    # args[2]/invert=
+    if kwargs.get('invert', None) is not None:
+        _invert = kwargs.get('invert')
+    else:
+        try:
             _invert = args[2]
-    except IndexError:
-        IndexError("invalid invert= argument supplied by user")
-    return numpy.reshape(
-        numpy.array(
-            numpy.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
-            dtype='uint8'
+        except IndexError:
+            # this is an optional arg
+            _invert = False
+    if kwargs.get('dtype', None) is not None:
+        _dtype = kwargs.get('dtype')
+    else:
+        try:
+            _dtype = args[3]
+        except IndexError:
+            _dtype = np.uint8
+    return np.reshape(
+        np.array(
+            np.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
+            dtype=_dtype
         ),
         _raster.array.shape
     )
@@ -281,7 +339,7 @@ def _local_merge(*args, **kwargs):
 
 
 def _local_split(*args, **kwargs):
-    """Stump for numpy._array_split. splits an input array into n (mostly) equal segments,
+    """Stump for np._array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation."""
     try:
         if kwargs.get('raster', None) is not None:
@@ -297,8 +355,8 @@ def _local_split(*args, **kwargs):
             _n = args[1]
     except IndexError:
         raise IndexError("invalid n= argument specified")
-    return numpy.array_split(
-        numpy.array(_raster.array, dtype=str(_raster.array.data.dtype)),
+    return np.array_split(
+        np.array(_raster.array, dtype=str(_raster.array.data.dtype)),
         _n
     )
 
@@ -378,7 +436,7 @@ def _est_ram_usage(dim=None, dtype=None, n_operations=None, as_gigabytes=True):
         dim = dim ** 2
     except TypeError as e:
         try:
-            dim = numpy.prod(dim)  # maybe this is a list?
+            dim = np.prod(dim)  # maybe this is a list?
         except Exception as e:
             raise e
     except Exception as e:
@@ -392,4 +450,4 @@ def _est_ram_usage(dim=None, dtype=None, n_operations=None, as_gigabytes=True):
     else:
         as_gigabytes = 1
 
-    return (dim * numpy.nbytes[dtype] * as_gigabytes) ** n_operations
+    return (dim * np.nbytes[dtype] * as_gigabytes) ** n_operations
