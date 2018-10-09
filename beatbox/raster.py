@@ -262,7 +262,19 @@ def extract(*args):
     :return:
     """
 
-def binary_reclassify(*args):
+def binary_reclassify(*args, **kwargs):
+    """
+    Generalized version of binary_reclassify that can accomodate
+    a local numpy array or processing on EE
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    # args[1]/match=
+    if not _is_number(args[1]):
+        logger.warning(" One or more values in your match array are "
+                       "not integers -- the reclass operation may fail")
+    # args[0]/raster=
     if isinstance(args[0], Raster):
         if args[0].backend == "local":
             return _local_binary_reclassify(args)
@@ -541,3 +553,12 @@ def _local_process_array_as_blocks(*args):
     """Yield successive n-sized chunks from 0-to-nrow."""
     for i in range(0, _rows, _n_chunks):
         yield _array[i:i + _n_chunks]
+
+def _is_number(*args):
+    try:
+        if np.sum([not isinstance(i, int) for i in args[0]]) > 0:
+            return False
+        else:
+            return True
+    except ValueError:
+        return False
