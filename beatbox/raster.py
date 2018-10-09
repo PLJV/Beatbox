@@ -212,12 +212,13 @@ class Raster(object):
                 filename=self.filename,
                 buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
             )[:]
-        # self.array here can be either a memmap object or undefined
-        self.array = gdalnumeric.LoadFile(
-            filename=self.filename,
-            buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
-        )
-        # store array values as a numpy masked array
+        # by default, load the whole file into memory
+        else:
+            self.array = gdalnumeric.LoadFile(
+                filename=self.filename,
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
+            )
+        # make sure we honor our no data value
         self.array = np.ma.masked_array(
             self.array,
             mask=self.array == self.ndv,
@@ -258,6 +259,10 @@ class Raster(object):
 
     def to_ee_image(self):
         return ee.array(self.array)
+
+
+def crop(*args, **kwargs):
+    return _local_crop(args)
 
 
 def extract(*args, **kwargs):
