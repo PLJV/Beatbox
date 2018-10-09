@@ -15,7 +15,7 @@ from tempfile import mkdtemp
 from random import randint
 # raster manipulation
 import numpy as np
-import georasters as gr
+from georasters import GeoRaster, get_geo_info, create_geotiff, merge
 import gdalnumeric
 import gdal
 from osgeo import gdal_array
@@ -44,18 +44,24 @@ except Exception:
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
 
+# short-hand string identifiers for numpy
+# types. Int, float, and byte will be the
+# most relevant for raster arrays, but the
+# gang is all here
 str_to_numpy_types = {
   "uint8": np.uint8,
   "int8": np.uint8,
+  "int": np.intc,
   "byte": np.int8,
   "uint16": np.uint16,
   "int16": np.int16,
   "uint32": np.uint32,
   "int32": np.int32,
+  "float": np.single,
   "float32": np.float32,
   "float64": np.float64,
   "complex64": np.complex64,
-  "complex128": np.complex128,
+  "complex128": np.complex128
 }
 
 class Raster(object):
@@ -179,7 +185,7 @@ class Raster(object):
         # grab raster meta information from GeoRasters
         try:
             self.ndv, _x_size, _y_size, self.geot, self.projection, _datatype = \
-                gr.get_geo_info(_file)
+                get_geo_info(_file)
         except Exception:
             raise AttributeError("problem processing file input -- is this a raster file?")
         # args[1]/dtype=
@@ -225,7 +231,7 @@ class Raster(object):
         :param driver:
         :return:
         """
-        return gr.create_geotiff(
+        return create_geotiff(
             name=dst_filename,
             Array=self.array,
             geot=self.geot,
@@ -241,7 +247,7 @@ class Raster(object):
         return self.array
 
     def to_georaster(self):
-        return gr.GeoRaster(
+        return GeoRaster(
             self.array,
             self.geot,
             nodata_value=self.ndv,
@@ -253,7 +259,7 @@ class Raster(object):
         return ee.array(self.array)
 
 
-def extract(*args):
+def extract(*args, **kwargs):
     """
     Extract wrapper function that will accept a series of 'with' arguments
     and use an appropriate backend to perform an extract operation with
@@ -273,7 +279,7 @@ def binary_reclassify(*args, **kwargs):
     # args[1]/match=
     if not _is_number(args[1]):
         logger.warning(" One or more values in your match array are "
-                       "not integers -- the reclass operation may fail")
+                       "not integers -- the reclass operation may produce unexpected results")
     # args[0]/raster=
     if isinstance(args[0], Raster):
         if args[0].backend == "local":
@@ -330,7 +336,7 @@ def _local_binary_reclassify(*args, **kwargs):
         _raster = _raster.to_georaster()
     # if this is a complete GeoRaster, try
     # to process the whole object
-    if isinstance(_raster, gr.GeoRaster):
+    if isinstance(_raster, GeoRaster):
         _raster = _raster.raster
         return np.reshape(
             np.array(
@@ -386,7 +392,7 @@ def _local_crop(*args, **kwargs):
                        " available for our raster operation. You should use"
                        "disc caching options with your dataset. Est Megabytes "
                        "needed: %s", -1*_enough_ram['bytes']*0.0000001)
-    return _raster.to_georaster().gr.clip(_shape)
+    return _raster.to_georaster().clip(_shape)
 
 
 
@@ -453,7 +459,7 @@ def _local_merge(*args, **kwargs):
             _rasters = args[0]
     except IndexError:
         raise IndexError("invalid raster= argument specified")
-    return gr.merge(_rasters)
+    return merge(_rasters)
 
 
 
@@ -520,7 +526,7 @@ def _est_array_size(*args, **kwargs):
     if isinstance(_obj, list) or isinstance(_obj, tuple):
         _array_len = np.prod(_obj)
     # args[0] is a GeoRaster object
-    elif isinstance(_obj, gr.GeoRaster):
+    elif isinstance(_obj, GeoRaster):
         _array_len = np.prod(_obj.shape)
         _byte_size = str_to_numpy_types[_obj.datatype.lower()](1)
     # args[0] is a Raster object
@@ -555,8 +561,15 @@ def _local_process_array_as_blocks(*args):
         yield _array[i:i + _n_chunks]
 
 def _is_number(*args):
+    """
+    Shorthand listcomp function that will determine whether any
+    item in a list is not a number.
+    :param args[0]: a python list object
+    :return: True on all integers,
+    """
     try:
-        if np.sum([not isinstance(i, int) for i in args[0]]) > 0:
+        if np.sum([not isinstance(i, int) or not isinstance(i, float)
+                   for i in args[0]]) > 0:
             return False
         else:
             return True
