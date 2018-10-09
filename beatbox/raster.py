@@ -262,11 +262,23 @@ def extract(*args):
     :return:
     """
 
+def binary_reclassify(*args):
+    if isinstance(args[0], Raster):
+        if args[0].backend == "local":
+            return _local_binary_reclassify(args)
+        else:
+            raise NotImplementedError("Currently only local binary "
+                                      "reclassification is supported")
 
 def _local_binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
-    self._array are reclassified as uint8(boolean) based on whether they
-    match or do not match the values of an input match array.
+    a numpy array are reclassified as uint8 (boolean) based on
+    whether they match or do not match the values of an input match
+    array.
+    :param: args0 : a Raster, GeoRaster, or related generator object
+    :param: args1 : a list object of integers specifying match values for
+    :param: raster : keyword version of args0
+    :param: match : keyword version of args1
     """
     # args[0]/raster=
     try:
@@ -300,15 +312,20 @@ def _local_binary_reclassify(*args, **kwargs):
             _dtype = args[3]
         except IndexError:
             _dtype = np.uint8
+    # if this is a Raster object, just drop
+    # _raster down to a GeoRaster and pass on
+    if isinstance(_raster, Raster):
+        _raster = _raster.to_georaster()
     # if this is a complete GeoRaster, try
     # to process the whole object
     if isinstance(_raster, gr.GeoRaster):
+        _raster = _raster.raster
         return np.reshape(
             np.array(
-                np.in1d(_raster.array, _match, assume_unique=True, invert=_invert),
+                np.in1d(_raster, _match, assume_unique=True, invert=_invert),
                 dtype=_dtype
             ),
-            _raster.array.shape
+            _raster.shape
         )
     # if this is a big raster that we've split into chunks
     # process this piece-wise
@@ -325,6 +342,7 @@ def _local_binary_reclassify(*args, **kwargs):
         )
     else:
         raise ValueError("raster= input should be a GeoRaster or Generator that numpy can work with")
+
 
 def _local_reclassify(*args, **kwargs):
     pass
