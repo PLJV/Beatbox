@@ -277,17 +277,46 @@ def binary_reclassify(*args, **kwargs):
     :param kwargs:
     :return:
     """
-    # args[1]/match=
-    if not _is_number(args[1]):
-        logger.warning(" One or more values in your match array are "
-                       "not integers -- the reclass operation may produce unexpected results")
+    _backend = 'local'
+    _array = None
+    _match = None
     # args[0]/raster=
-    if isinstance(args[0], Raster):
-        if args[0].backend == "local":
-            return _local_binary_reclassify(args)
-        else:
-            raise NotImplementedError("Currently only local binary "
-                                      "reclassification is supported")
+    if kwargs.get('raster', None) is not None:
+        _array = kwargs.get('raster')
+    else:
+        try:
+            _array = args[0]
+        except IndexError:
+            raise IndexError("invalid raster= argument provided by user")
+    # args[1]/match=
+    if kwargs.get('match', None) is not None:
+        _match = kwargs.get('match')
+    else:
+        try:
+            _match = args[1]
+        except IndexError:
+            raise IndexError("invalid match= argument provided by user")
+    # process using the appropriate backend
+    if not _is_number(_match):
+        logger.warning(" One or more values in your match array are "
+                       "not integers -- the reclass operation may produce "
+                       "unexpected results")
+    if isinstance(_array, Raster):
+        _backend = 'local'
+        _array = _array.to_georaster()
+    elif isinstance(_array, GeoRaster):
+        _backend = 'local'
+    elif isinstance(_array, np.array):
+        _backend = 'local'
+    else:
+        _backend = 'unknown'
+
+    if _backend == "local":
+        return _local_binary_reclassify(_array, _match)
+    else:
+        raise NotImplementedError("Currently only local binary "
+                                  "reclassification is supported")
+
 
 def _local_binary_reclassify(*args, **kwargs):
     """ binary reclassification of input data. All cell values in
