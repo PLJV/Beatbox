@@ -360,7 +360,7 @@ def _local_binary_reclassify(*args, **kwargs):
              for i, d in enumerate(_raster)]
         )
     else:
-        raise ValueError("raster= input should be a GeoRaster or Generator that numpy can work with")
+        raise ValueError("raster= input should be a Raster, GeoRaster, or Generator that numpy can work with")
 
 
 def _local_reclassify(*args, **kwargs):
@@ -561,6 +561,7 @@ def _local_process_array_as_blocks(*args):
     for i in range(0, _rows, _n_chunks):
         yield _array[i:i + _n_chunks]
 
+
 def _is_number(*args):
     """
     Shorthand listcomp function that will determine whether any
@@ -569,7 +570,7 @@ def _is_number(*args):
     :return: True on all integers,
     """
     try:
-        if np.sum([not isinstance(i, int) or not isinstance(i, float)
+        if np.sum([not(isinstance(i, int) or isinstance(i, float))
                    for i in args[0]]) > 0:
             return False
         else:
