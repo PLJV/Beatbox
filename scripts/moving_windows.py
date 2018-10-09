@@ -93,7 +93,7 @@ if __name__ == "__main__":
         for m in _MATCH_ARRAYS:
             focal=r
             if _MATCH_ARRAYS[m] is not None:
-                focal.array=focal.binary_reclass(match=_MATCH_ARRAYS[m])
+                focal.array=binary_reclassify(raster=focal, match=_MATCH_ARRAYS[m])
             for window in _WINDOW_DIMS:
                 filename=str(m+"_"+str(window)+"x"+str(window))
                 generic_filter(r = focal, function = _FUNCTION, size=window, \

@@ -33,7 +33,7 @@ try:
     import ee
     ee.Initialize()
 except Exception:
-    logger.warning("Failed to load the Earth Engine API. "
+    logger.warning(" Failed to load the Earth Engine API. "
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
 
@@ -68,11 +68,11 @@ class Vector(object):
             elif is_json(args[0]):
                 self.read(string=args[0])
         except IndexError:
-            if kwargs.get('filename'):
+            if kwargs.get('filename', None) is not None:
                 self.filename = kwargs.get('filename')
-            elif kwargs.get('json'):
+            elif kwargs.get('json', None) is not None:
                 self.read(string=kwargs.get('json'))
-            pass # allow empty specification
+            pass  # allow empty specification
         except Exception as e:
             raise e
         # if the user specified a filename, try to open it
@@ -237,48 +237,44 @@ class Vector(object):
         1st = either a full path to a file or a geojson string object
         :return: None
         """
-        # sandbox for potential JSON data
+        arg_err = "Unable to process first positional argument as a file or geojson string"
+        # sandbox for potential input File/JSON data
         _json = None
+        _filename = None
         # args[0] / -filename / -string
         try:
-            if os.path.exists(args[0]):
-                self._filename = args[0]
-            elif is_json(args[0]):
-                    _json = args[0]
+            if kwargs.get('filename', None) is not None:
+                _filename = kwargs.get('filename')
             else:
-                raise AttributeError("Unable to process first positional argument as a file or geojson string")
-        except IndexError:
-            if kwargs.get('filename'):
-                if os.path.exists(kwargs.get('filename')):
-                    self._filename = kwargs.get('filename')
+                _filename = args[0]
+            if not os.path.exists(_filename):
+                if is_json(_filename):
+                    _json = _filename
+                    _filename = None
                 else:
-                    raise OSError("invalid filename= argument supplied by user")
-            elif kwargs.get('string'):
-                if is_json(kwargs.get('string')):
-                    _json = kwargs.get('string')
-            # allow no arguments exception -- that we explicitly set
-            # filename elsewhere and we are calling .read() without
-            # arguments
-            pass
+                    raise AttributeError(arg_err)
+            else:
+                self.filename = _filename
+        except IndexError:
+            _json = kwargs.get('string', None)
+            if not is_json(_json):
+                _json = None
         # if this is a json string, parse out our geometry and attribute
         # data accordingly
-        if _json:
+        if _json is not None:
             self._json_string_to_shapely_geometries(string=_json)
-        # otherwise, assume this is a file and parse out or data using Fiona
+        # otherwise, process this as a file and parse out or data using Fiona
         else:
             _shape_collection = fiona.open(self.filename)
-            try:
-                self._crs = _shape_collection.crs
-                self._crs_wkt = _shape_collection.crs_wkt
-                # parse our dict of geometries into an actual shapely list
-                self._fiona_to_shapely_geometries(geometries=_shape_collection)
-                self._schema = _shape_collection.schema
-                # process our attributes
-                self._attributes = pd.DataFrame(
-                    [ dict(item['properties']) for item in _shape_collection]
-                )
-            except Exception as e:
-                raise e
+            self._crs = _shape_collection.crs
+            self._crs_wkt = _shape_collection.crs_wkt
+            # parse our dict of geometries into an actual shapely list
+            self._fiona_to_shapely_geometries(geometries=_shape_collection)
+            self._schema = _shape_collection.schema
+            # process our attributes
+            self._attributes = pd.DataFrame(
+                [dict(item['properties']) for item in _shape_collection]
+            )
 
     def write(self, *args, **kwargs):
         """ wrapper for fiona.open that will write in-class geometry data to disk
@@ -290,20 +286,21 @@ class Vector(object):
         """
         # args[0] / filename=
         try:
-            self.filename = args[0]
-        except IndexError:
-            if kwargs.get('filename', False):
+            if kwargs.get('filename', None) is not None:
                 self.filename = kwargs.get('filename')
+            else:
+                self.filename = args[0]
+        except IndexError:
             # perhaps we explicitly set our filename elsewhere
             pass
         # args[1] / type=
-        _type = 'ESRI Shapefile' # by default, write as a shapefile
         try:
-            _type = args[1]
-        except IndexError:
-            if kwargs.get('type', False):
+            if kwargs.get('type', None) is not None:
                 _type = kwargs.get('type')
-            pass
+            else:
+                _type = args[1]
+        except IndexError:
+            _type = 'ESRI Shapefile'  # by default, write as a shapefile
         try:
             # call fiona to write our geometry to disk
             with fiona.open(
@@ -342,6 +339,13 @@ class Vector(object):
             _gdf = gp.read_file(self._filename)
         return _gdf
 
+    def to_geopandas(self):
+        """
+        Shorthand to to_geodataframe()
+        :return:
+        """
+        return self.to_geodataframe()
+
     def to_ee_feature_collection(self):
         return ee.FeatureCollection(self.to_geojson(stringify=True))
 
@@ -354,11 +358,12 @@ class Vector(object):
         """
         _as_string = False
         try:
-            _as_string = True if kwargs.get("stringify", False) else False
+            if kwargs.get("stringify", None) is not None:
+                _as_string = kwargs.get("stringify")
+            else:
+                _as_string = args[0]
         except IndexError:
             _as_string = False
-        except Exception as e:
-            raise e
         # build a target dictionary
         feature_collection = {
             "type": "FeatureCollection",
@@ -392,6 +397,7 @@ class Vector(object):
 
         return feature_collection
 
+
 def _geom_units(*args):
     # args[0]
     try:
@@ -418,18 +424,39 @@ def _geom_units(*args):
         else:
             return _units
 
-def _rebuild_crs(*args):
+
+def _local_rebuild_crs(*args):
     _gdf = args[0]
     _gdf.crs = fiona.crs.from_epsg(int(_gdf.crs['init'].split(":")[1]))
     return _gdf
 
+
+def rebuild_crs(*args, **kwargs):
+    """
+    Build a CRS dict for a user-specified Vector or GeoDataFrame object
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    try:
+        _backend = args[1]
+    except IndexError:
+        _backend = kwargs.get('backend', 'local')
+    if _backend.lower().find('local') != -1:
+        return _local_rebuild_crs(*args)
+    elif _backend.lower().find('ee') != -1:
+        raise BaseException("Currently only local operations for this function are supported")
+    else:
+        raise BaseException("Unknown backend type specified")
+
 def is_json(*args, **kwargs):
     try:
-        _string = args[0]
+        if kwargs.get("string", None) is not None:
+            _string = kwargs.get("string")
+        else:
+            _string = args[0]
     except IndexError:
-        _string = kwargs.get("string")
-        if _string is None:
-            raise IndexError("invalid string= argument passed by user")
+        raise IndexError("invalid string= argument passed by user")
     # sneakily use json.loads() to test whether this is
     # a valid json string
     try:
