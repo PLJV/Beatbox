@@ -48,7 +48,7 @@ except Exception:
 # types. Int, float, and byte will be the
 # most relevant for raster arrays, but the
 # gang is all here
-str_to_numpy_types = {
+NUMPY_TYPES = {
   "uint8": np.uint8,
   "int8": np.uint8,
   "int": np.intc,
@@ -196,6 +196,7 @@ class Raster(object):
                 _dtype = args[1]
             except IndexError:
                 _dtype = _datatype
+        _dtype = NUMPY_TYPES[_dtype.lower()]
         if self.ndv is None:
             self.ndv = _DEFAULT_NA_VALUE
         # low-level call to gdal with explicit type specification
@@ -528,20 +529,20 @@ def _est_array_size(*args, **kwargs):
     # args[0] is a GeoRaster object
     elif isinstance(_obj, GeoRaster):
         _array_len = np.prod(_obj.shape)
-        _byte_size = str_to_numpy_types[_obj.datatype.lower()](1)
+        _byte_size = NUMPY_TYPES[_obj.datatype.lower()](1)
     # args[0] is a Raster object
     elif isinstance(_obj, Raster):
         _array_len = np.prod(_obj.array.shape)
-        _byte_size = str_to_numpy_types[_obj.array.dtype.lower()](1)
+        _byte_size = NUMPY_TYPES[_obj.array.dtype.lower()](1)
     # args[0] is something else?
     else:
         _array_len = len(_obj)
     # args[1]/dtype= argument was specified
     try:
-        _byte_size = str_to_numpy_types[args[1].lower()](1)
+        _byte_size = NUMPY_TYPES[args[1].lower()](1)
     except IndexError:
         if kwargs.get("dtype", None) is not None:
-            _byte_size = str_to_numpy_types[kwargs.get("dtype").lower()](1)
+            _byte_size = NUMPY_TYPES[kwargs.get("dtype").lower()](1)
         elif _byte_size is None:
             raise IndexError("invalid dtype= argument specified")
     return _array_len * sys.getsizeof(_byte_size)
