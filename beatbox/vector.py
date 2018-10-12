@@ -334,8 +334,9 @@ class Vector(object):
             # merge in our attributes
             _gdf = _gdf.join(self._attributes)
         except Exception:
-            logger.warning("failed to build a GeoDataFrame from shapely geometries -- "
-                           "will try to read from original source file instead")
+            logger.warning("failed to build a GeoDataFrame from shapely"
+                           "geometries -- will try to read from original"
+                           " source file instead")
             _gdf = gp.read_file(self._filename)
         return _gdf
 
@@ -445,7 +446,8 @@ def rebuild_crs(*args, **kwargs):
     if _backend.lower().find('local') != -1:
         return _local_rebuild_crs(*args)
     elif _backend.lower().find('ee') != -1:
-        raise BaseException("Currently only local operations for this function are supported")
+        raise BaseException("Currently only local operations for this"
+                            " function are supported")
     else:
         raise BaseException("Unknown backend type specified")
 
@@ -464,4 +466,3 @@ def is_json(*args, **kwargs):
         return True
     except Exception:
         return False
-

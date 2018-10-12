@@ -2,7 +2,8 @@
 
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2018, Playa Lakes Joint Venture"
-__credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts", "Stephen Chang"]
+__credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts",
+               "Stephen Chang"]
 __license__ = "GPL"
 __version__ = "3"
 __maintainer__ = "Kyle Taylor"
@@ -10,8 +11,7 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
 # mmap file caching and file handling
-import sys, os
-from tempfile import mkdtemp
+import sys
 from random import randint
 # raster manipulation
 import numpy as np
@@ -75,10 +75,10 @@ class Raster(object):
     :return None
     """
     def __init__(self, *args, **kwargs):
-        self.backend = "local" # By default, assume that we are working with raster data locally
+        self.backend = "local"
         self.array = None
         self.filename = None
-        self._use_disc_caching = None # Use mmcache?
+        self._use_disc_caching = None  # Use mmcache?
         # Public properties for GeoRaster compatibility and exposure to user
         self.ndv = None          # no data value
         self.x_cell_size = None  # cell size of x (meters/degrees)
@@ -249,6 +249,10 @@ class Raster(object):
         return self.array
 
     def to_georaster(self):
+        """
+
+        :return:
+        """
         return GeoRaster(
             self.array,
             self.geot,
@@ -524,11 +528,12 @@ def _local_split(*args, **kwargs):
 
 
 def _local_ram_sanity_check(*args):
-    #args[0] (Raster object, GeoRaster, or numpy array)
+    # args[0] (Raster object, GeoRaster, or numpy array)
     try:
         _array = args[0]
     except IndexError:
-        raise IndexError("first pos. argument should be some kind of raster data")
+        raise IndexError("first pos. argument should be some kind of "
+                         "raster data")
 
     _cost = _est_free_ram - _est_array_size(_array)
 
@@ -536,6 +541,7 @@ def _local_ram_sanity_check(*args):
         'available': bool(_cost>0),
         'bytes': int(_cost)
     }
+
 
 def _est_free_ram():
     """
@@ -596,7 +602,7 @@ def _local_process_array_as_blocks(*args):
         yield _array[i:i + _n_chunks]
 
 
-def _is_number(*args):
+def _is_number(num_list=None):
     """
     Shorthand listcomp function that will determine whether any
     item in a list is not a number.
@@ -605,7 +611,7 @@ def _is_number(*args):
     """
     try:
         if np.sum([not(isinstance(i, int) or isinstance(i, float))
-                   for i in args[0]]) > 0:
+                   for i in num_list) > 0:
             return False
         else:
             return True
