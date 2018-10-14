@@ -273,7 +273,7 @@ def binary_reclassify(*args, array=None, match=None):
     # currently only local operations are supported
     if isinstance(array, Raster):
         _backend = 'local'
-        array = _array.to_georaster()
+        array = array.to_georaster()
     elif isinstance(array, GeoRaster):
         _backend = 'local'
     elif isinstance(array, np.array):
