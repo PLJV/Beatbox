@@ -230,7 +230,7 @@ def _guess_backend(obj=None):
         return "unknown"
 
 
-def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
+def fuzzy_convex_hull(obj=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Fuzzy convex hull wrapper function that will call either a local or earth engine
     implementation of the Carter fuzzy convex hull generator. Currently only a local
@@ -242,19 +242,19 @@ def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     :return: GeoDataFrame
     """
     # args[0]/points=
-    if points is None:
+    if obj is None:
         raise IndexError("invalid points= argument")
     # launch our context runner
-    if isinstance(points, "EE"):
+    if isinstance(obj, EE):
         return Do(
             this=_ee_fuzzy_convex_hull,
-            that=[points, width]
+            that=[obj, width]
         ).run()
-    elif isinstance(points, "Local"):
+    elif isinstance(obj, Local):
         return Do(
             this=_local_fuzzy_convex_hull,
-            that=[points, width]
+            that=[obj, width]
         ).run()
     else:
         # our default action is to just assume local operation
-        return _local_fuzzy_convex_hull(points=points, width=width)
+        return _local_fuzzy_convex_hull(points=obj, width=width)
