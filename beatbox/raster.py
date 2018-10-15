@@ -255,7 +255,6 @@ def binary_reclassify(*args, array=None, match=None):
     Generalized version of binary_reclassify that can accomodate
     a local numpy array or processing on EE
     :param args:
-    :param kwargs:
     :return:
     """
     _backend = 'local'
@@ -380,7 +379,6 @@ def _ee_extract(*args):
     """
     Earth Engine extract handler
     :param args:
-    :param kwargs:
     :return:
     """
     pass
@@ -389,7 +387,6 @@ def _local_extract(*args):
     """
     local raster extraction handler
     :param args:
-    :param kwargs:
     :return:
     """
     pass
@@ -399,7 +396,6 @@ def _ee_extract(*args):
     """
     EE raster extraction handler
     :param args:
-    :param kwargs:
     :return:
     """
     if not _HAVE_EE:
@@ -467,7 +463,6 @@ def _est_array_size(obj=None, byte_size=None, dtype=None):
     """
 
     :param args:
-    :param kwargs:
     :return:
     """
     # args[0] is a list containing array dimensions

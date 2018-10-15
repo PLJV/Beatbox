@@ -211,7 +211,19 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     return gdf
 
 
-def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH, backend="local"):
+def _guess_backend(obj=None):
+    """
+    """
+    if obj is None:
+        return None
+    elif isinstance(obj, "Raster") or isinstance(obj, "Vector"):
+        return obj.backend
+    elif isinstance(obj, "GeoRaster") or isinstance(obj, "GeoDataFrame"):
+        return "local"
+    else:
+        return "unknown"
+
+def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Fuzzy convex hull wrapper function that will call either a local or earth engine
     implementation of the Carter fuzzy convex hull generator. Currently only a local

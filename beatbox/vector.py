@@ -20,6 +20,7 @@ import json
 import pyproj
 
 from shapely.geometry import *
+from beatbox.do import Local, EE
 
 import logging
 
@@ -322,7 +323,6 @@ class Vector(object):
         """
 
         :param args:
-        :param kwargs:
         :return:
         """
         # args[0]/stringify=
@@ -395,24 +395,21 @@ def _local_rebuild_crs(*args):
     return _gdf
 
 
-def rebuild_crs(backend=None, *args):
+def _ee_rebuild_crs(*args):
+    pass
+
+
+def rebuild_crs(*args):
     """
     Build a CRS dict for a user-specified Vector or GeoDataFrame object
     :param args:
-    :param kwargs:
     :return:
     """
-    if backend is None:
-        backend = backend
+    if isinstance(args[0], "EE"):
+        return _ee_rebuild_crs(*args)
     else:
-        backend = "local"
-    if backend.lower().find('local') != -1:
+        # default action is to just assume local
         return _local_rebuild_crs(*args)
-    elif backend.lower().find('ee') != -1:
-        raise BaseException("Currently only local operations for this"
-                            " function are supported")
-    else:
-        raise BaseException("Unknown backend type specified")
 
 
 def is_json(string=None):

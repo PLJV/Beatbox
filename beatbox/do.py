@@ -15,38 +15,52 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class Do(object):
-    def __init__(self, *args):
-        """
-        Do is a dictcomp interface for performing arbitrary spatial tasks with Vector and Raster objects
-        :param args:
-        """
-        self._what = None
-        self._with = None
-        self._backend = None
-        try:
-            self.run = args[0]
-        except IndexError:
-            # allow empty class specification, e.g. for copy() and deepcopy()
-            pass
+class Backend(object):
+    """
+    Default backend interface
+    """
+    _backend_code = {'local': 0, 'ee': 1}
+    _what = None
+    _with = None
 
-    def _guess_backend(self):
-        """
-        Parse the parameters specified by 'what' to determine whether this should run locally or on
-        Earth Engine.
-        :param args:
-        :return: None
-        """
-        pass
 
-    def _unpack_with_arguments(self):
+class Local(Backend):
+    pass
+
+
+class EE(Backend):
+    pass
+
+
+class Do(Backend):
+    def __init__(self, this=None, that=None, *args):
+        """
+        Do is a dictcomp interface for performing arbitrary spatial tasks with
+        Vector and Raster objects
+        :param this:
+        :param that:
+        """
+        if this is None or that is None:
+            try:
+                self._what = args[0]
+                self._with = args[1]
+                args = args[:2]
+            except IndexError:
+                raise IndexError("this=, that= are empty and we failed to ",
+                                 "parse positional arguments")
+        else:
+            self._what = this # run function
+            self._with = that # Currently EE or Local are supported
+        self._using = self._unpack_with_arguments(*args)
+
+    def _unpack_with_arguments(self, *args):
         """
         The what arguments specified by the user can be pass as a dictionary or as a list. This
         method will unpack user-specified 'with' arguments so that they can be handled by a user-specified
         'what' function
         :return: None
         """
-        pass
+        return args
 
     @property
     def run(self):
