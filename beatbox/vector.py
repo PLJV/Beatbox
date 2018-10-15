@@ -422,13 +422,13 @@ def rebuild_crs(*args):
         return _local_rebuild_crs(*args)
 
 
-def is_json(string=None):
-    if string is None:
+def is_json(*args):
+    if args[0] is None:
         raise IndexError("invalid string= argument passed by user")
     # sneakily use json.loads() to test whether this is
     # a valid json string
     try:
-        string = json.loads(string)
+        string = json.loads(args[0])
         return True
     except Exception:
         return False
