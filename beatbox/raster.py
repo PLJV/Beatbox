@@ -253,7 +253,7 @@ def extract(*args):
     :return:
     """
 
-def binary_reclassify(*args, array=None, match=None):
+def binary_reclassify(array=None, match=None, *args):
     """
     Generalized version of binary_reclassify that can accomodate
     a local numpy array or processing on EE
@@ -348,7 +348,7 @@ def _local_reclassify(*args):
     pass
 
 
-def _local_crop(*args, raster=None, shape=None):
+def _local_crop(raster=None, shape=None, *args):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
     # args[0] / raster=
     if raster is None:

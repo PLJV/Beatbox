@@ -33,7 +33,7 @@ class EE(Backend):
 
 
 class Do(Backend):
-    def __init__(self, *args, this=None, that=None):
+    def __init__(self, this=None, that=None, *args):
         """
         Do is a dictcomp interface for performing arbitrary spatial tasks with
         Vector and Raster objects

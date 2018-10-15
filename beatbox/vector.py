@@ -217,7 +217,7 @@ class Vector(object):
         # to shape geometries
         self._geometries = [shape(ft['geometry']) for ft in _features]
 
-    def read(self, *args, filename=None, json=None):
+    def read(self, filename=None, json=None, *args):
         """
         Accepts a GeoJSON string or string path to a shapefile that is read
         and used to assign internal class variables for CRS, geometries, and schema
