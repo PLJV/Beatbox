@@ -33,12 +33,15 @@ class EE(Backend):
 
 
 class Do(Backend):
-    def __init__(self, this=None, that=None, *args):
+    def __init__(self, *args, this=None, that=None):
         """
         Do is a dictcomp interface for performing arbitrary spatial tasks with
         Vector and Raster objects
-        :param this:
-        :param that:
+        :param this: run 'this' function
+        :param that: Backend class describing with 'this' function's
+        parameters
+        :param args: list of any additional positional arguments that are
+        passed to the 'this' function
         """
         if this is None or that is None:
             try:
@@ -47,13 +50,13 @@ class Do(Backend):
                 args = args[:2]
             except IndexError:
                 raise IndexError("this=, that= are empty and we failed to ",
-                                 "parse positional arguments")
+                                 "parse any positional arguments")
         else:
             self._what = this # run function
             self._with = that # Currently EE or Local are supported
         self._using = self._unpack_with_arguments(*args)
 
-    def _unpack_with_arguments(self, *args):
+    def _unpack_with_arguments(self, *args, **kwargs):
         """
         The what arguments specified by the user can be pass as a dictionary or as a list. This
         method will unpack user-specified 'with' arguments so that they can be handled by a user-specified

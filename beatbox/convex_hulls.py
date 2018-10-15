@@ -16,6 +16,7 @@ import geopandas as gp
 import fiona
 
 from beatbox.vector import Vector, _local_rebuild_crs
+from beatbox.do import Backend, EE, Local, Do
 
 from copy import copy
 from scipy.sparse.csgraph import connected_components
@@ -158,6 +159,10 @@ def _local_convex_hull(points=None):
     return points.convex_hull()
 
 
+def _ee_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
+    raise NotImplementedError
+
+
 def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Accepts a GeoDataFrame containing points, buffers the point geometries by some distance,
@@ -213,36 +218,43 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
 
 def _guess_backend(obj=None):
     """
+    Will attempt to parse a proper backend code based on object context
     """
     if obj is None:
         return None
     elif isinstance(obj, "Raster") or isinstance(obj, "Vector"):
         return obj.backend
     elif isinstance(obj, "GeoRaster") or isinstance(obj, "GeoDataFrame"):
-        return "local"
+        return Backend._backend_code["local"]
     else:
         return "unknown"
 
-def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
+
+def fuzzy_convex_hull(*args, points=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Fuzzy convex hull wrapper function that will call either a local or earth engine
     implementation of the Carter fuzzy convex hull generator. Currently only a local
     version of this is implemented.
     :param arg1: A GeoDataFrame or Vector object specifying source points we intend to buffer
     :param arg2: An integer value (in meters) specifying the radius we wish to buffer point features by
-    :param arg3: A string value specifying which backend ('local'/'ee') we wish to use
     :param points: Keyword specification for first positional arg
     :param width: Keyword specification for second positional arg
-    :param backend: Keyword specification for third positional arg
     :return: GeoDataFrame
     """
     # args[0]/points=
     if points is None:
         raise IndexError("invalid points= argument")
     # launch our context runner
-    if backend.lower().find('local') != -1:
-        return _local_fuzzy_convex_hull(points=points, width=width)
-    elif backend.lower().find('ee') != -1:
-        raise BaseException("Earth Engine interface not yet implemented")
+    if isinstance(args[0], "EE"):
+        return Do(
+            this=_ee_fuzzy_convex_hull,
+            that=[args[1], args[2]]
+        ).run()
+    elif isinstance(args[0], "Local"):
+        return Do(
+            this=_local_fuzzy_convex_hull,
+            that=[args[1], args[2]]
+        ).run()
     else:
-        raise BaseException("Unknown backend type specified")
+        # our default action is to just assume local operation
+        return _local_fuzzy_convex_hull(points=points, width=width)

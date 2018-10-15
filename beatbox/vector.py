@@ -20,7 +20,7 @@ import json
 import pyproj
 
 from shapely.geometry import *
-from beatbox.do import Local, EE
+from beatbox.do import Local, EE, Do
 
 import logging
 
@@ -217,7 +217,7 @@ class Vector(object):
         # to shape geometries
         self._geometries = [shape(ft['geometry']) for ft in _features]
 
-    def read(self, filename=None, json=None, *args):
+    def read(self, *args, filename=None, json=None):
         """
         Accepts a GeoJSON string or string path to a shapefile that is read
         and used to assign internal class variables for CRS, geometries, and schema
@@ -406,9 +406,19 @@ def rebuild_crs(*args):
     :return:
     """
     if isinstance(args[0], "EE"):
-        return _ee_rebuild_crs(*args)
+        return Do(
+            args[2:],
+            this=_ee_rebuild_crs,
+            that=args[1],
+        ).run()
+    elif isinstance(args[0], "Local"):
+        return Do(
+            args[2:],
+            this=_local_rebuild_crs,
+            that=args[1]
+        ).run()
     else:
-        # default action is to just assume local
+        # our default action is to just assume local operation
         return _local_rebuild_crs(*args)
 
 

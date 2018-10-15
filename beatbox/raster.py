@@ -64,7 +64,9 @@ NUMPY_TYPES = {
   "complex128": np.complex128
 }
 
+
 class Raster(object):
+
     """
     Raster class is a wrapper for generating GeoRasters,
     Numpy arrays, and Earth Engine Image objects. It opens files
@@ -74,6 +76,7 @@ class Raster(object):
     file (typically a GeoTIFF) or an asset id for earth engine
     :return None
     """
+
     def __init__(self, filename=None, array=None, dtype=None,
                  disc_caching=None):
         self.backend = "local"
@@ -345,7 +348,7 @@ def _local_reclassify(*args):
     pass
 
 
-def _local_crop(raster=None, shape=None, *args):
+def _local_crop(*args, raster=None, shape=None):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
     # args[0] / raster=
     if raster is None:
