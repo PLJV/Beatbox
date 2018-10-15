@@ -230,7 +230,7 @@ def _guess_backend(obj=None):
         return "unknown"
 
 
-def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH, *args):
+def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Fuzzy convex hull wrapper function that will call either a local or earth engine
     implementation of the Carter fuzzy convex hull generator. Currently only a local
@@ -245,15 +245,15 @@ def fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH, *args):
     if points is None:
         raise IndexError("invalid points= argument")
     # launch our context runner
-    if isinstance(args[0], "EE"):
+    if isinstance(points, "EE"):
         return Do(
             this=_ee_fuzzy_convex_hull,
-            that=[args[1], args[2]]
+            that=[points, width]
         ).run()
-    elif isinstance(args[0], "Local"):
+    elif isinstance(points, "Local"):
         return Do(
             this=_local_fuzzy_convex_hull,
-            that=[args[1], args[2]]
+            that=[points, width]
         ).run()
     else:
         # our default action is to just assume local operation
