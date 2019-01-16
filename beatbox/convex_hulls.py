@@ -59,19 +59,19 @@ def _dissolve_overlapping_geometries(buffers=None):
     if buffers is None:
         raise IndexError("invalid buffers= "
                          "argument provided by user")
-    # force casting as a GeoDataFrame
+    # force casting as a GeoSeries
     try:
-        buffers = gp.GeoDataFrame({
+        buffers = gp.GeoSeries({
             'geometry': buffers
         })
     except ValueError:
-        if isinstance(buffers, gp.GeoDataFrame):
+        if isinstance(buffers, gp.GeoSeries):
             pass
         else:
             raise ValueError("Invalid buffers= argument input -- failed to"
-                             " make a GeoDataFrame from input provided")
+                             " make a GeoSeries from input provided")
     except Exception:
-        raise Exception("Unable to cast buffers= argument as a GeoDataFrame.")
+        raise Exception("Unable to cast buffers= argument as a GeoSeries.")
     # determine appropriate groupings for our overlapping buffers
     if buffers.size > _ARRAY_MAX:
         split = int(round(buffers.size / _ARRAY_MAX) + 1)
@@ -91,10 +91,10 @@ def _dissolve_overlapping_geometries(buffers=None):
             )
             # free-up our RAM
             del chunks
-        except AttributeError:
+        except AttributeError as e:
             raise AttributeError("Encountered an error when checking for overlaps in chunks of buffered input. "
                                  "This shouldn't happen. Consider updating your libraries with conda/pip and try"
-                                 " again.")
+                                 " again. Full attribute error: " + str(e))
     else:
         overlap_matrix = np.concatenate(
             [buffers.geometry.overlaps(x).values.astype(int) for x in buffers.explode()]
