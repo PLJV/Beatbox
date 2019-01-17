@@ -60,17 +60,19 @@ class Vector(object):
         self._crs = []
         self._crs_wkt = []
         # args[0] / filename= / json=
-        if os.path.exists(filename):
+        if filename is None and json is None:
+            pass  # allow an empty specification
+        elif is_valid_file(filename):
             self.filename = filename
+            self.read(filename=self.filename)
         elif is_json(filename):
-            self.read(string=filename)
-        if is_json(json):
-            self.read(string=json)
-        else:
-            pass  # allow empty specification
-        # if the user specified a filename, try to open it
-        if self.filename is not None:
-            self.read(self.filename)
+            self.read(filename=filename)
+        elif is_json(json):
+            self.read(json=json)
+        # first argument is a GeoPandas object?
+        elif isinstance(filename, gp):
+            self.read(json=filename.to_json())
+            
 
     def __copy__(self):
         """ simple copy method that creates a new instance of a vector class and assigns \
@@ -217,7 +219,7 @@ class Vector(object):
         # to shape geometries
         self._geometries = [shape(ft['geometry']) for ft in _features]
 
-    def read(self, filename=None, json=None, *args):
+    def read(self, filename=None, json=None):
         """
         Accepts a GeoJSON string or string path to a shapefile that is read
         and used to assign internal class variables for CRS, geometries, and schema
@@ -230,22 +232,18 @@ class Vector(object):
         1st = either a full path to a file or a geojson string object
         :return: None
         """
-        arg_err = "Unable to process first positional argument as a file or geojson string"
-        # sandbox for potential input File/JSON data
-        _json = None
-        _filename = None
         # args[0] / -filename / -string
-        if os.path.exists(filename):
+        if is_valid_file(filename):
             json = None
-        elif is_json(json):
-            self.filename = None
+            self.filename = filename
         # if this is a json string, parse out our geometry and attribute
         # data accordingly
-        if json is not None:
-            self._json_string_to_shapely_geometries(string=_json)
+        elif is_json(json):
+            self.filename = None
+            self._json_string_to_shapely_geometries(string=json)            
         # otherwise, process this as a file and parse out or data using Fiona
         else:
-            _shape_collection = fiona.open(self.filename)
+            _shape_collection = fiona.open(filename)
             self._crs = _shape_collection.crs
             self._crs_wkt = _shape_collection.crs_wkt
             # parse our dict of geometries into an actual shapely list
@@ -421,6 +419,14 @@ def rebuild_crs(*args):
         # our default action is to just assume local operation
         return _local_rebuild_crs(*args)
 
+def is_valid_file(string=None):
+    try:
+        if os.path.exists(string):
+            return True
+        else:
+            return False
+    except Exception:
+        return False
 
 def is_json(string=None):
     if string is None:

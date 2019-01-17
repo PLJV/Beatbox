@@ -23,13 +23,13 @@ from scipy.sparse.csgraph import connected_components
 
 _DEFAULT_EPSG = 2163
 _DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
-_ARRAY_MAX = 2E6 # maximum array length to attempt numpy operations on before chunking
+_ARRAY_MAX = 2E6 # arbitrary maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def _chunks(*args):
+def _split_in_chunks(*args):
     """
     Hidden function that will accept an array (list) and split it up into
     chunks of an arbitrary length using the Python yield built-in
@@ -50,7 +50,8 @@ def _dissolve_overlapping_geometries(buffers=None):
     """
     Hidden function that will accept a GeoDataFrame containing Polygons,
     explode the geometries from single part to multi part, and then dissolve
-    geometries that overlap spatially.
+    geometries that overlap spatially. Implementation is robust for extremely
+    large GeoDataFrames
     :param arg1: A GeoDataFrame or Vector object specifying source buffers 'groups' we intend to attribute with
     :param buffers: Keyword specification for first positional argument
     :return: GeoDataFrame
@@ -79,13 +80,12 @@ def _dissolve_overlapping_geometries(buffers=None):
                        "which may lead to artifacts at boundaries. "
                        "ETA: %s min",
                        split, round((split*16.5**2)/60))
-        chunks = _chunks(buffers, split)
+        chunks = _split_in_chunks(buffers, split)
         try:
             # listcomp magic : for each geometry, determine whether it overlaps with
             # all other geometries in this chunk
             overlap_matrix = np.concatenate(
-                [buffers.geometry.overlaps(d).values.astype(int)
-                 for i, d in enumerate(chunks)]
+                [ buffers.geometry.overlaps(d).values.astype(int) for i, d in enumerate(chunks) ]
             )
             # free-up our RAM
             del chunks
@@ -133,6 +133,8 @@ def _attribute_by_overlap(buffers=None, points=None):
         raise IndexError("invalid points= argument provided by user")
     # dissolve-by explode
     gdf_out = _dissolve_overlapping_geometries(buffers)
+    # ensure consistent CRS
+    gdf_out = gdf_out.to_crs(points.crs)
     # return the right-sided spatial join
     return gp.\
         sjoin(points, gdf_out, how='inner', op='intersects').\
