@@ -62,6 +62,7 @@ def _dissolve_overlapping_geometries(buffers=None):
                          "argument provided by user")
     # force casting as a GeoDataFrame
     try:
+        _crs = buffers.crs # retain our original CRS
         buffers = gp.GeoDataFrame({'geometry' : buffers})
     except ValueError:
         if isinstance(buffers, gp.GeoDataFrame):
@@ -102,7 +103,7 @@ def _dissolve_overlapping_geometries(buffers=None):
         })
         # call geopandas dissolve with our 'ids' column and
         dissolved_buffers = dissolved_buffers.dissolve(by='group')
-        dissolved_buffers.crs = buffers.crs
+        dissolved_buffers.crs = _crs
     else:
         # a sane default implementation used for most small GeoDataFrames
         dissolved_buffers = gp.overlay(
@@ -110,7 +111,7 @@ def _dissolve_overlapping_geometries(buffers=None):
             buffers, 
             how='union'
         )
-        dissolved_buffers.crs = buffers.crs
+        dissolved_buffers.crs = _crs
     return dissolved_buffers
 
 
