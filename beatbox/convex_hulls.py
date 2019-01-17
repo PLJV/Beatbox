@@ -23,7 +23,7 @@ from scipy.sparse.csgraph import connected_components
 
 _DEFAULT_EPSG = 2163
 _DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
-_ARRAY_MAX = 800 # maximum array length to attempt numpy operations on before chunking
+_ARRAY_MAX = 2E6 # maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,19 +59,17 @@ def _dissolve_overlapping_geometries(buffers=None):
     if buffers is None:
         raise IndexError("invalid buffers= "
                          "argument provided by user")
-    # force casting as a GeoSeries
+    # force casting as a GeoDataFrame
     try:
-        buffers = gp.GeoSeries({
-            'geometry': buffers
-        })
+        buffers = gp.GeoDataFrame({'geometry' : buffers})
     except ValueError:
-        if isinstance(buffers, gp.GeoSeries):
+        if isinstance(buffers, gp.GeoDataFrame):
             pass
         else:
             raise ValueError("Invalid buffers= argument input -- failed to"
-                             " make a GeoSeries from input provided")
+                             " make a GeoDataFrame from input provided")
     except Exception:
-        raise Exception("Unable to cast buffers= argument as a GeoSeries.")
+        raise Exception("Unable to cast buffers= argument (type:" + str(type(buffers)) + ") as a GeoDataFrame.")
     # determine appropriate groupings for our overlapping buffers
     if buffers.size > _ARRAY_MAX:
         split = int(round(buffers.size / _ARRAY_MAX) + 1)
@@ -85,9 +83,8 @@ def _dissolve_overlapping_geometries(buffers=None):
             # listcomp magic : for each geometry, determine whether it overlaps with
             # all other geometries in this chunk
             overlap_matrix = np.concatenate(
-                [buffers.geometry.overlaps(x).values.astype(int)
-                 for i, d in enumerate(chunks)
-                 for x in d.explode()]
+                [buffers.geometry.overlaps(d).values.astype(int)
+                 for i, d in enumerate(chunks)]
             )
             # free-up our RAM
             del chunks
@@ -95,21 +92,22 @@ def _dissolve_overlapping_geometries(buffers=None):
             raise AttributeError("Encountered an error when checking for overlaps in chunks of buffered input. "
                                  "This shouldn't happen. Consider updating your libraries with conda/pip and try"
                                  " again. Full attribute error: " + str(e))
+        # merge attributes
+        overlap_matrix.shape = (buffers.size, buffers.size)
+        n, ids = connected_components(overlap_matrix)
+        dissolved_buffers = gp.GeoDataFrame({
+            'geometry': buffers.geometry,
+            'group': ids
+        })
+        # call geopandas dissolve with our 'ids' column and
+        dissolved_buffers = dissolved_buffers.dissolve(by='group')
+        dissolved_buffers.crs = buffers.crs
     else:
-        overlap_matrix = np.concatenate(
-            [buffers.geometry.overlaps(x).values.astype(int) for x in buffers.explode()]
-        )
-    # merge attributes
-    overlap_matrix.shape = (len(buffers), len(buffers))
-    n, ids = connected_components(overlap_matrix)
-    dissolved_buffers = gp.GeoDataFrame({
-        'geometry': buffers.geometry,
-        'group': ids
-    })
-    # call geopandas dissolve with our 'ids' column and
-    dissolved_buffers = dissolved_buffers.dissolve(by='group')
-    dissolved_buffers.crs = buffers.crs
+        # a sane default implementation used for most small data.frames
+        dissolved_buffers = gp.overlay(buffers, buffers, how='union')
+        dissolved_buffers.crs = dissolved_buffers.crs
     return dissolved_buffers
+
 
 
 def _attribute_by_overlap(buffers=None, points=None):
