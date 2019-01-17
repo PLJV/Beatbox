@@ -70,7 +70,8 @@ def _dissolve_overlapping_geometries(buffers=None):
                              " make a GeoDataFrame from input provided")
     except Exception:
         raise Exception("Unable to cast buffers= argument (type:" + str(type(buffers)) + ") as a GeoDataFrame.")
-    # determine appropriate groupings for our overlapping buffers
+    # determine appropriate groupings for our overlapping buffers -- implementation may differ based
+    # on how large the original GeoDataFrame is
     if buffers.size > _ARRAY_MAX:
         split = int(round(buffers.size / _ARRAY_MAX) + 1)
         logger.warning("Attempting intersect operation on a large "
@@ -103,9 +104,13 @@ def _dissolve_overlapping_geometries(buffers=None):
         dissolved_buffers = dissolved_buffers.dissolve(by='group')
         dissolved_buffers.crs = buffers.crs
     else:
-        # a sane default implementation used for most small data.frames
-        dissolved_buffers = gp.overlay(buffers, buffers, how='union')
-        dissolved_buffers.crs = dissolved_buffers.crs
+        # a sane default implementation used for most small GeoDataFrames
+        dissolved_buffers = gp.overlay(
+            buffers, 
+            buffers, 
+            how='union'
+        )
+        dissolved_buffers.crs = buffers.crs
     return dissolved_buffers
 
 
