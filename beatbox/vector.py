@@ -241,18 +241,17 @@ class Vector(object):
         elif is_json(json):
             self.filename = None
             self._json_string_to_shapely_geometries(string=json)            
-        # otherwise, process this as a file and parse out or data using Fiona
-        else:
-            _shape_collection = fiona.open(filename)
-            self._crs = _shape_collection.crs
-            self._crs_wkt = _shape_collection.crs_wkt
-            # parse our dict of geometries into an actual shapely list
-            self._fiona_to_shapely_geometries(geometries=_shape_collection)
-            self._schema = _shape_collection.schema
-            # process our attributes
-            self._attributes = pd.DataFrame(
-                [dict(item['properties']) for item in _shape_collection]
-            )
+        # by default, process this as a file and parse out or data using Fiona
+        _shape_collection = fiona.open(filename)
+        self._crs = _shape_collection.crs
+        self._crs_wkt = _shape_collection.crs_wkt
+        # parse our dict of geometries into an actual shapely list
+        self._fiona_to_shapely_geometries(geometries=_shape_collection)
+        self._schema = _shape_collection.schema
+        # process our attributes
+        self._attributes = pd.DataFrame(
+            [dict(item['properties']) for item in _shape_collection]
+        )
 
     def write(self, filename=None, type=None):
         """ wrapper for fiona.open that will write in-class geometry data to disk
