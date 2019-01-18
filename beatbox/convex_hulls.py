@@ -13,6 +13,7 @@ __status__ = "Testing"
 import logging
 import numpy as np
 import geopandas as gp
+import pandas as pd
 import fiona
 
 from beatbox.vector import Vector, _local_rebuild_crs
@@ -51,7 +52,8 @@ def _dissolve_overlapping_geometries(buffers=None):
     Hidden function that will accept a GeoDataFrame containing Polygons,
     explode the geometries from single part to multi part, and then dissolve
     geometries that overlap spatially. Implementation is robust for extremely
-    large GeoDataFrames
+    large GeoDataFrames. Proposed dropping this in the future. A better implementation
+    is already available upstream in GeoPandas
     :param arg1: A GeoDataFrame or Vector object specifying source buffers 'groups' we intend to attribute with
     :param buffers: Keyword specification for first positional argument
     :return: GeoDataFrame
@@ -106,11 +108,12 @@ def _dissolve_overlapping_geometries(buffers=None):
         dissolved_buffers.crs = _crs
     else:
         # a sane default implementation used for most small GeoDataFrames
-        dissolved_buffers = gp.overlay(
-            buffers, 
-            buffers, 
-            how='union'
-        )
+        # this is mostly redundant -- a user can call unary_union directly
+        dissolved_buffers = buffers.geometry.unary_union
+        dissolved_buffers = gp.GeoDataFrame({
+            'geometry':dissolved_buffers,
+            'group':pd.Series(range(1,len(dissolved_buffers)+1))
+        })
         dissolved_buffers.crs = _crs
     return dissolved_buffers
 
@@ -193,7 +196,11 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
         point_buffers = copy(points)
         # adjust the width= parameter based on the projection
         # of our point buffers
-        point_buffers = point_buffers.buffer(width)
+        point_buffers = point_buffers.buffer(width).unary_union
+        point_buffers = gp.GeoDataFrame({
+            'geometry': point_buffers,
+            'group':pd.Series(range(1,len(point_buffers)+1))
+        })
     except Exception as e:
         raise e
     # dissolve overlapping buffered geometries
