@@ -201,6 +201,8 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
             'geometry': point_buffers,
             'group':pd.Series(range(1,len(point_buffers)+1))
         })
+        # set the CRS
+        point_buffers.crs = {'init':'epsg:'+str(_DEFAULT_EPSG)}
     except Exception as e:
         raise e
     # dissolve overlapping buffered geometries
