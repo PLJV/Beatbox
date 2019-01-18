@@ -205,7 +205,7 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
         point_buffers.crs = {'init':'epsg:'+str(_DEFAULT_EPSG)}
     except Exception as e:
         raise e
-    # dissolve overlapping buffered geometries
+    # spatial join of our point_buffers
     point_clusters = _attribute_by_overlap(point_buffers, points)
     # drop any extra columns lurking in our point clusters data
     # and dissolve by our clst_id field
@@ -216,7 +216,10 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
         cols_to_remove.remove('geometry')
         for col in cols_to_remove:
             del point_clusters[col]
+    # group our point clusters by cluster id
+    _clst_id = point_clusters['clst_id']
     point_clusters = point_clusters.dissolve(by='clst_id')
+    point_clusters['clst_id'] = _clst_id
     # estimate our convex hulls and drop geometries that are not polygons
     convex_hulls = point_clusters.convex_hull
     convex_hulls = convex_hulls[[str(ft).find("POLYGON") != -1
