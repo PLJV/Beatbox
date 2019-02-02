@@ -167,8 +167,9 @@ class Raster(object):
             # use our shadow'd value from GeoRasters if
             # nothing was specified by the user
             dtype = _dtype
-        # re-cast our datatype as a numpy type
-        dtype = NUMPY_TYPES[dtype.lower()]
+        # re-cast our datatype as a numpy type, if needed
+        if type(dtype) == str:
+            dtype = NUMPY_TYPES[dtype.lower()]
         if self.ndv is None:
             self.ndv = _DEFAULT_NA_VALUE
         # low-level call to gdal with explicit type specification
@@ -177,18 +178,18 @@ class Raster(object):
         if self._using_disc_caching is not None:
             # create a cache file
             self.array = np.memmap(
-                self._using_disc_caching, dtype=_dtype, mode='w+', shape=(_x_size, _y_size)
+                self._using_disc_caching, dtype=dtype, mode='w+', shape=(_x_size, _y_size)
             )
             # load file contents into the cache
             self.array[:] = gdalnumeric.LoadFile(
                 filename=self.filename,
-                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(dtype)
             )[:]
         # by default, load the whole file into memory
         else:
             self.array = gdalnumeric.LoadFile(
                 filename=self.filename,
-                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(dtype)
             )
         # make sure we honor our no data value
         self.array = np.ma.masked_array(

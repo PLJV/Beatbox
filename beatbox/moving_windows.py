@@ -73,12 +73,12 @@ def filter(r=None, destfile=None, write=True, footprint=None,
         image = ndimage.maximum_filter(
             input = image,
             footprint = _FOOTPRINT
-    )
+        )
     elif function == np.min:
         image = ndimage.minimum_filter(
             input = image,
             footprint = _FOOTPRINT
-    )
+        )
     # but, if all else fails, use the (slower) ndimage.generic_filter
     else:
         try:
@@ -87,14 +87,8 @@ def filter(r=None, destfile=None, write=True, footprint=None,
                 function=function,
                 footprint=_FOOTPRINT
             )
-        except RuntimeError as e:
-            if re.search(e, "function"):
-                raise RuntimeError("function= argument cannot be None")
-            else:
-                raise RuntimeError("exiting on an unhandled exception")
-        except ValueError as e:
-            raise ValueError("You may have missed a function= argument "
-                             "to generic_filter()")
+        except Exception as e:
+                raise RuntimeError("Failed to execute generic_filter using user-specified function. See:", e)
     # either save to disk or return to user
     if _WRITE_FILE:
         try:
