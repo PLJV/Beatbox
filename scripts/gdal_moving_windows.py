@@ -11,7 +11,8 @@ __status__ = "Testing"
 """
 
 import sys, os, re
-import argparse
+import numpy as np
+import argparse as ap
 import logging
 
 from beatbox import Raster, moving_windows
@@ -22,37 +23,38 @@ logger = logging.getLogger(__name__)
 # define handlers for argparse for any arguments passed at runtime
 
 parser = ap.ArgumentParser(
-    description='Command-line interfaces for performing moving windows analyses',
-    'on raster datasets using GDAL and numpy arrays'
+    description='Command-line interfaces for performing moving windows analyses' +
+    ' on raster datasets using GDAL and numpy arrays'
 )
 
-parser.add_argument('-h', '--help', help='Print this help message',
-    required=False
-)
+# parser.add_argument('-h', '--help', help='Print this help message',
+#     required=False
+# )
 
-parser.add_argument('-r', '--raster', help='Specifies the full path to source',
+parser.add_argument('-r', '--raster', help='Specifies the full path to source'+
     'raster file to use',
     required=True
 )
 
-parser.add_argument('-c', '--reclass', help='If we are going to reclassify',
+parser.add_argument('-c', '--reclass', help='If we are going to reclassify'+
     'the input raster here are the cell values to match',
     required=False
 )
 
-parser.add_argument('-f', '--fun', help='Specifies the function to apply over',
-    'a moving window. The default function is sum. Sum, mean, and sd are',
-    'supported.',
+parser.add_argument('-f', '--fun', help='Specifies the function to apply over'+
+    ' a moving window. The default function is sum. Sum, mean, and sd are'+
+    ' supported.',
     required=False
 )
 
-parser.add_argument('-w', '--window-size', help='Specifies the dimensions for',
-    'our window',
+parser.add_argument('-w', '--window-size', help='Specifies the dimensions for'+
+    ' our window',
     required=True
 )
 
-parser.add_argument('-t', '--target-values', help='Specifies the target values we are',
-    'reclassifying to, if the user asked us to reclassify. Default is binary reclassification',
+parser.add_argument('-t', '--target-values', help='Specifies the target values'+
+    'we are reclassifying to, if the user asked us to reclassify. Default is'+
+    'binary reclassification',
     required=False
 )
 
@@ -73,7 +75,7 @@ if __name__ == "__main__":
     # required parameters
     _INPUT_RASTER=None
     _IS_NASS=True
-    _FUNCTION=numpy.sum
+    _FUNCTION=np.sum
     _WINDOW_DIMS=[]
     _MATCH_ARRAYS={}
     _TARGET_RECLASS_VALUE=[1]
