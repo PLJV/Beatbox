@@ -13,26 +13,21 @@ __status__ = "Testing"
 # mmap file caching and file handling
 import sys
 from random import randint
+from copy import copy
 # raster manipulation
-import numpy as np
-from georasters import GeoRaster, get_geo_info, create_geotiff, merge
+from georasters import GeoRaster
+from georasters import get_geo_info, create_geotiff, merge
 import gdalnumeric
 import gdal
+import numpy as np
 from osgeo import gdal_array
-# logging
-import logging
-# deep copy
-from copy import copy
 # memory profiling
 import types
 import psutil
-
-_DEFAULT_NA_VALUE = 0
-_DEFAULT_PRECISION = np.uint16
-
+# logging
+import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 # Fickle beast handlers for Earth Engine
 try:
     import ee
@@ -64,6 +59,8 @@ NUMPY_TYPES = {
   "complex128": np.complex128
 }
 
+_DEFAULT_NA_VALUE = 0
+_DEFAULT_PRECISION = np.uint16
 
 class Raster(object):
 
@@ -202,7 +199,7 @@ class Raster(object):
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
         """
-        wrapper for georasters create_geotiff that writes a numpy array to disk.
+        Wrapper for GeoRaster's create_geotiff that writes a numpy array to disk.
         :param dst_filename:
         :param format:
         :param driver:
@@ -221,11 +218,16 @@ class Raster(object):
         )
 
     def to_numpy_array(self):
+        """
+        Returns the Numpy array values for our Raster object.
+        :return:
+        """
         return self.array
 
     def to_georaster(self):
         """
-
+        Parses internal Raster elements and returns as a clean GeoRaster
+        object.
         :return:
         """
         return GeoRaster(
@@ -237,6 +239,14 @@ class Raster(object):
         )
 
     def to_ee_image(self):
+        """
+        Parses our internal numpy array as an Earth Engine ee.array object.
+        Would like to see this eventually become a standard interface for
+        dynamically ingesting raster data on Earth Engine, but it's currently
+        broken
+        """
+        logger.warning("to_ee_image() is an experimental feature -- we are",
+                       "still working through asset ingestion for earth engine.")
         return ee.array(self.array)
 
 

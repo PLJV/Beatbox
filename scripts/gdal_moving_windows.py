@@ -10,11 +10,51 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 """
 
-import sys
-import os
-import re
+import sys, os, re
+import argparse
+import logging
 
-from beatbox import *
+from beatbox import Raster, moving_windows
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# define handlers for argparse for any arguments passed at runtime
+
+parser = ap.ArgumentParser(
+    description='Command-line interfaces for performing moving windows analyses',
+    'on raster datasets using GDAL and numpy arrays'
+)
+
+parser.add_argument('-h', '--help', help='Print this help message',
+    required=False
+)
+
+parser.add_argument('-r', '--raster', help='Specifies the full path to source',
+    'raster file to use',
+    required=True
+)
+
+parser.add_argument('-c', '--reclass', help='If we are going to reclassify',
+    'the input raster here are the cell values to match',
+    required=False
+)
+
+parser.add_argument('-f', '--fun', help='Specifies the function to apply over',
+    'a moving window. The default function is sum. Sum, mean, and sd are',
+    'supported.',
+    required=False
+)
+
+parser.add_argument('-w', '--window-size', help='Specifies the dimensions for',
+    'our window',
+    required=True
+)
+
+parser.add_argument('-t', '--target-values', help='Specifies the target values we are',
+    'reclassifying to, if the user asked us to reclassify. Default is binary reclassification',
+    required=False
+)
 
 def cat(string=None):
     ''' print minus the implied \n'''
@@ -23,10 +63,10 @@ def cat(string=None):
 
 def print_usage():
     print(sys.argv[0]," : calculate raster statistics along a user-specified 'roving' windows buffer")
-    print("usage:   " + sys.argv[0] + " -r <raster file> -reclass <match array>"
-    " -mw <window size in pixels> -function <function name>")
-    print("example: " + sys.argv[0] + " -r nass_2016.tif -reclass row_crop=1,2,"
-    " 3;wheat=2,7 -mw 3,11,33 -function numpy.sum")
+    print("usage:   " + sys.argv[0] + " -r <raster file> --reclass <match array>"
+    " -w <window size in pixels> --fun <function name>")
+    print("example: " + sys.argv[0] + " -r nass_2016.tif --reclass row_crop=1,2,"
+    " 3;wheat=2,7 -w 3,11,33 --fun numpy.sum")
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -36,11 +76,17 @@ if __name__ == "__main__":
     _FUNCTION=numpy.sum
     _WINDOW_DIMS=[]
     _MATCH_ARRAYS={}
+    _TARGET_RECLASS_VALUE=[1]
     # process runtime arguments
+    args = vars(parser.parse_args())
+    # -h / --help
+    if args['help']:
+        print_usage()
+    # fix this:
     if len(sys.argv) == 1: print_usage()
     for i, arg in enumerate(sys.argv):
         arg.replace("--", "-")
-        if arg == "-u":
+        if arg == "-h":
             print_usage()
         elif arg == "-r":
             _INPUT_RASTER=sys.argv[i + 1]

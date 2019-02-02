@@ -24,7 +24,7 @@ from scipy.sparse.csgraph import connected_components
 
 _DEFAULT_EPSG = 2163
 _DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
-_ARRAY_MAX = 2E6 # arbitrary maximum array length to attempt numpy operations on before chunking
+_ARRAY_MAX = 2E6 # maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -118,8 +118,7 @@ def _dissolve_overlapping_geometries(buffers=None):
     return dissolved_buffers
 
 
-
-def _attribute_by_overlap(buffers=None, points=None):
+def _spatial_join(buffers=None, points=None):
     """
     Hidden function that will use the group attribute from intersecting polygon features to classify
     point geometries. This is intended to be used as a fuzzy classifier and is a shorthand for gp.sjoin().
@@ -135,7 +134,7 @@ def _attribute_by_overlap(buffers=None, points=None):
     # args[1] / points=
     if points is None:
         raise IndexError("invalid points= argument provided by user")
-    # dissolve-by explode
+    # explode and dissolve geometries
     gdf_out = _dissolve_overlapping_geometries(buffers)
     # ensure consistent CRS
     gdf_out = gdf_out.to_crs(points.crs)
@@ -206,7 +205,7 @@ def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     except Exception as e:
         raise e
     # spatial join of our point_buffers
-    point_clusters = _attribute_by_overlap(point_buffers, points)
+    point_clusters = _spatial_join(point_buffers, points)
     # drop any extra columns lurking in our point clusters data
     # and dissolve by our clst_id field
     if len(point_clusters.columns) > 2:
