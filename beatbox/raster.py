@@ -76,23 +76,25 @@ class Raster(object):
 
     def __init__(self, filename=None, array=None, dtype=None,
                  disc_caching=None):
-        self.backend = "local"
-        self.array = None
-        self.filename = None
+        # Privates
+        self._backend = "local"
+        self._array = None
+        self._filename = None
         self._using_disc_caching = None  # Use mmcache?
-        # Public properties for GeoRaster compatibility and exposure to user
-        self.ndv = None          # no data value
+        # Public properties (maintained for GeoRasters)
+        self.ndv = _DEFAULT_NA_VALUE # no data value
         self.x_cell_size = None  # cell size of x (meters/degrees)
         self.y_cell_size = None  # cell size of y (meters/degrees)
         self.geot = None         # geographic transformation
         self.projection = None   # geographic projection
+        self.dtype = _DEFAULT_PRECISION
         # args[0]/file=
         self.filename = filename
         # args[1]/array=
         self.array = array
         # args[2]/dtype=
-        if dtype is None:
-            dtype = _DEFAULT_PRECISION
+        if dtype is not None:
+            self.dtype = dtype
         # args[3]/disc_cache=
         if disc_caching is not None:
             self._using_disc_caching = str(randint(1, 9999999999)) + \
@@ -101,7 +103,7 @@ class Raster(object):
         # path and try to open it
         if self.filename is not None:
             try:
-                self.open(self.filename, dtype=dtype)
+                self.open(self.filename)
             except OSError:
                 raise OSError("couldn't open the filename provided")
 
@@ -128,7 +130,14 @@ class Raster(object):
 
     @array.setter
     def array(self, *args):
-        self._array = args[0]
+        """
+        Assign a numpy masked array to our Raster object
+        """
+        self._array = np.ma.masked_array(
+            args[0],
+            mask=self._array == self.ndv,
+            fill_value=self.ndv
+        )
 
     @property
     def filename(self):
@@ -157,19 +166,19 @@ class Raster(object):
             raise IndexError("invalid file= argument provided")
         # grab raster meta information from GeoRasters
         try:
-            self.ndv, _x_size, _y_size, self.geot, self.projection, _dtype = \
+            self.ndv, self.x_cell_size, self.y_cell_size, self.geot, self.projection, self.dtype = \
                 get_geo_info(file)
         except Exception:
             raise AttributeError("problem processing file input -- is this",
                                  "a raster file?")
         # args[1]/dtype=
-        if dtype is None:
-            # use our shadow'd value from GeoRasters if
-            # nothing was specified by the user
-            dtype = _dtype
+        if dtype is not None:
+            # override our shadow'd value from GeoRasters if
+            # something was specified by the user
+            self.dtype = dtype
         # re-cast our datatype as a numpy type, if needed
-        if type(dtype) == str:
-            dtype = NUMPY_TYPES[dtype.lower()]
+        if type(self.dtype) == str:
+            self.dtype = NUMPY_TYPES[self.dtype.lower()]
         if self.ndv is None:
             self.ndv = _DEFAULT_NA_VALUE
         # low-level call to gdal with explicit type specification
@@ -183,13 +192,13 @@ class Raster(object):
             # load file contents into the cache
             self.array[:] = gdalnumeric.LoadFile(
                 filename=self.filename,
-                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(dtype)
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(self.dtype)
             )[:]
         # by default, load the whole file into memory
         else:
             self.array = gdalnumeric.LoadFile(
                 filename=self.filename,
-                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(dtype)
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(self.dtype)
             )
         # make sure we honor our no data value
         self.array = np.ma.masked_array(
@@ -206,6 +215,8 @@ class Raster(object):
         :param driver:
         :return:
         """
+        if not dst_filename:
+            dst_filename = self.filename
         return create_geotiff(
             name=dst_filename,
             Array=self.array,

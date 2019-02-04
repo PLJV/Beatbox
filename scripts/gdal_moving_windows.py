@@ -15,9 +15,6 @@ import numpy as np
 import argparse as ap
 import logging
 
-from beatbox import Raster
-from beatbox.moving_windows import filter
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -76,10 +73,32 @@ parser.add_argument(
     required=False
 )
 
-def cat(string=None):
-    ''' print minus the implied \n'''
-    sys.stdout.write(string)
-    sys.stdout.flush()
+parser.add_argument(
+    '-o',
+    '--outfile',
+    help='Specify an output filename to use. If multiple window sizes are specified'+
+    ' they are appended to the filename specified here.',
+    type=str,
+    required=False
+)
+
+parser.add_argument(
+    '-d',
+    '--debug',
+    help='Enable verbose logging interface for debugging',
+    type=str,
+    required=False
+)
+
+args = vars(parser.parse_args())
+
+# -d/--debug
+if not args['debug']:
+    # disable logging unless asked by the user
+    logger.disabled = True
+
+from beatbox import Raster
+from beatbox.moving_windows import filter
 
 # standard numpy functions that we may have
 # non-generic ndimage filters available for
@@ -107,15 +126,19 @@ def get_numpy_function(user_fun_str=None):
     # default case
     return None
 
+def cat(string=None):
+    ''' print minus the implied \n'''
+    sys.stdout.write(string)
+    sys.stdout.flush()
+
 if __name__ == "__main__":
     # required parameters
-    _INPUT_RASTER=None
-    _FUNCTION=None
-    _WINDOW_DIMS=[]
-    _MATCH_ARRAYS={}
-    _TARGET_RECLASS_VALUE=[1]
-    # process runtime arguments
-    args = vars(parser.parse_args())
+    _INPUT_RASTER = None  # full-path to a raster file to apply our window over
+    _FUNCTION = None    # function to apply over each window
+    _WINDOW_DIMS = []   # dimensions for moving windows calculations
+    _MATCH_ARRAYS = {}  # used for reclass operations
+    _TARGET_RECLASS_VALUE = [1] # if we reclass a raster, what should we reclass to?
+    _OUTFILE_NAME = "output" # output filename prefix
     if len(sys.argv) == 1 :
         parser.print_help()
         sys.exit(0)
@@ -148,30 +171,42 @@ if __name__ == "__main__":
         for c in classes:
             c = c.split("=")
             _MATCH_ARRAYS[c[0]] = list(map(int, c[1].split(",")))
+    # -o/--outfile
+    if args['outfile']:
+        _OUTFILE_NAME = args['outfile']
     # sanity-check runtime input
-    if not _MATCH_ARRAYS:
-        _MATCH_ARRAYS['output'] = None
     if not _WINDOW_DIMS:
         raise ValueError("moving window dimensions need to be specified using"
         "the -w argument at runtime. see -h for usage.")
     elif not _INPUT_RASTER:
-        raise ValueError("this analysis requires an input raster specified"
-        "with -r argument at runtime. see -h for usage.")
+        raise ValueError("An input raster should be specified"
+        "with the -r argument at runtime. see -h for usage.")
+    #
+    r = Raster(_INPUT_RASTER)
     # perform any re-classification requests prior to our ndimage filtering
     if _MATCH_ARRAYS:
-        r = Raster(_INPUT_RASTER)
         cat(" -- performing moving window analyses: ")
         for m in _MATCH_ARRAYS:
-            focal=r
+            focal = r
             if _MATCH_ARRAYS[m] is not None:
-                focal.array=binary_reclassify(
+                focal.array= binary_reclassify(
                     raster=focal,
                     match=_MATCH_ARRAYS[m])
             for window in _WINDOW_DIMS:
-                filename=str(m+"_"+str(window)+"x"+str(window))
+                filename=str(_OUTFILE_NAME+"_"+str(window)+"x"+str(window))
                 filter(
                     r = focal,
                     function = _FUNCTION,
                     size = window,
-                    destfile = filename)
-                cat(".")
+                    dest_file = filename)
+                '['+str(round(([i+1 for i,x in enumerate(_WINDOW_DIMS) if x == window][0] / len(_WINDOW_DIMS))*100))+'%]'
+    # otherwise just do our ndimage filtering
+    else:
+        for window in _WINDOW_DIMS:
+            filename = str(_OUTFILE_NAME+"_"+str(window)+"x"+str(window))
+            test = filter(
+                r = r,
+                function = _FUNCTION,
+                size = window,
+                dest_filename = filename)
+            '['+str(round(([i+1 for i,x in enumerate(_WINDOW_DIMS) if x == window][0] / len(_WINDOW_DIMS))*100))+'%]'

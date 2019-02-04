@@ -35,16 +35,18 @@ def _dict_to_mwindow_filename(key=None, window_size=None):
     """ quick kludging to generate a filename from key + window size """
     return str(key)+"_"+str(window_size)+"x"+str(window_size)
 
-def filter(r=None, destfile=None, write=True, footprint=None,
+def filter(r=None, dest_filename=None, write=True, footprint=None,
            overwrite=True, function=None, size=None, dtype=np.uint16):
     """ wrapper for ndimage.generic_filter that can comprehend a GeoRaster,
     apply a common circular buffer, and optionally writes a numpy array to
     disk following user specifications
     """
     try:
-        _WRITE_FILE = ((not os.path.isfile(destfile)) | overwrite) & write \
-        & (destfile is not None)
+        _WRITE_FILE = ((not os.path.isfile(dest_filename)) | overwrite) & write \
+        & (dest_filename is not None)
     except TypeError as e:
+        logger.warning("encountered an issue specifying a write file -- ",
+                       "filter will return result to user and not write to disc")
         _WRITE_FILE = False
     try:
         _FOOTPRINT = footprint if footprint is True else \
@@ -81,6 +83,9 @@ def filter(r=None, destfile=None, write=True, footprint=None,
         )
     # but, if all else fails, use the (slower) ndimage.generic_filter
     else:
+        logger.warning("couldn't find a suitable pre-canned ndimage function",
+                       "for your filter operation. Falling back on generic_filter,",
+                       "which may be slow")
         try:
             image = ndimage.generic_filter(
                 input=np.array(image, dtype=dtype),
@@ -92,18 +97,15 @@ def filter(r=None, destfile=None, write=True, footprint=None,
     # either save to disk or return to user
     if _WRITE_FILE:
         try:
-            r.array=image
-            r.write(dst_filename = str(destfile))
-        except AttributeError as e:
-            logger.warning("%s doesn't appear to be a Raster object; "
-                           "returning generic_filter result to user", e)
-
-            destfile = destfile.replace(".tif", "") # gdal will append for us
             r.array = image
-            r.write(dst_filename=str(destfile))
+            r.write(dst_filename = str(dest_filename))
+        except AttributeError as e:
+            dest_filename = dest_filename.replace(".tif", "") # gdal will append for us
+            r.array = image
+            r.write(dst_filename=str(dest_filename))
         except Exception as e:
             logger.warning("%s doesn't appear to be a Raster object; "
-                           "returning generic_filter result to user", e)
+                           "returning result to user", e)
             return image
     else:
         return image
