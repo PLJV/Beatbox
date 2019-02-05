@@ -20,6 +20,7 @@ import json
 import pyproj
 
 from shapely.geometry import *
+from beatbox.do import Local, EE, Do
 
 import logging
 
@@ -39,7 +40,7 @@ except Exception:
 
 
 class Vector(object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, filename=None, json=None):
         """Handles file input/output operations for shapefiles \
         using fiona and shapely built-ins and performs select \
         spatial modifications on vector datasets
@@ -59,25 +60,19 @@ class Vector(object):
         self._crs = []
         self._crs_wkt = []
         # args[0] / filename= / json=
-        try:
-            # assume it's a filename
-            if os.path.exists(args[0]):
-                self.filename = args[0]
-            # if our read fails, check
-            # to see if it's JSON
-            elif is_json(args[0]):
-                self.read(string=args[0])
-        except IndexError:
-            if kwargs.get('filename', None) is not None:
-                self.filename = kwargs.get('filename')
-            elif kwargs.get('json', None) is not None:
-                self.read(string=kwargs.get('json'))
-            pass  # allow empty specification
-        except Exception as e:
-            raise e
-        # if the user specified a filename, try to open it
-        if self.filename:
-            self.read(self.filename)
+        if filename is None and json is None:
+            pass  # allow an empty specification
+        elif is_valid_file(filename):
+            self.filename = filename
+            self.read(filename=self.filename)
+        elif is_json(filename):
+            self.read(filename=filename)
+        elif is_json(json):
+            self.read(json=json)
+        # first argument is a GeoPandas object?
+        elif isinstance(filename, gp):
+            self.read(json=filename.to_json())
+            
 
     def __copy__(self):
         """ simple copy method that creates a new instance of a vector class and assigns \
@@ -224,7 +219,7 @@ class Vector(object):
         # to shape geometries
         self._geometries = [shape(ft['geometry']) for ft in _features]
 
-    def read(self, *args, **kwargs):
+    def read(self, filename=None, json=None):
         """
         Accepts a GeoJSON string or string path to a shapefile that is read
         and used to assign internal class variables for CRS, geometries, and schema
@@ -237,46 +232,28 @@ class Vector(object):
         1st = either a full path to a file or a geojson string object
         :return: None
         """
-        arg_err = "Unable to process first positional argument as a file or geojson string"
-        # sandbox for potential input File/JSON data
-        _json = None
-        _filename = None
         # args[0] / -filename / -string
-        try:
-            if kwargs.get('filename', None) is not None:
-                _filename = kwargs.get('filename')
-            else:
-                _filename = args[0]
-            if not os.path.exists(_filename):
-                if is_json(_filename):
-                    _json = _filename
-                    _filename = None
-                else:
-                    raise AttributeError(arg_err)
-            else:
-                self.filename = _filename
-        except IndexError:
-            _json = kwargs.get('string', None)
-            if not is_json(_json):
-                _json = None
+        if is_valid_file(filename):
+            json = None
+            self.filename = filename
         # if this is a json string, parse out our geometry and attribute
         # data accordingly
-        if _json is not None:
-            self._json_string_to_shapely_geometries(string=_json)
-        # otherwise, process this as a file and parse out or data using Fiona
-        else:
-            _shape_collection = fiona.open(self.filename)
-            self._crs = _shape_collection.crs
-            self._crs_wkt = _shape_collection.crs_wkt
-            # parse our dict of geometries into an actual shapely list
-            self._fiona_to_shapely_geometries(geometries=_shape_collection)
-            self._schema = _shape_collection.schema
-            # process our attributes
-            self._attributes = pd.DataFrame(
-                [dict(item['properties']) for item in _shape_collection]
-            )
+        elif is_json(json):
+            self.filename = None
+            self._json_string_to_shapely_geometries(string=json)            
+        # by default, process this as a file and parse out or data using Fiona
+        _shape_collection = fiona.open(filename)
+        self._crs = _shape_collection.crs
+        self._crs_wkt = _shape_collection.crs_wkt
+        # parse our dict of geometries into an actual shapely list
+        self._fiona_to_shapely_geometries(geometries=_shape_collection)
+        self._schema = _shape_collection.schema
+        # process our attributes
+        self._attributes = pd.DataFrame(
+            [dict(item['properties']) for item in _shape_collection]
+        )
 
-    def write(self, *args, **kwargs):
+    def write(self, filename=None, type=None):
         """ wrapper for fiona.open that will write in-class geometry data to disk
 
         (Optional) Keyword arguments:
@@ -285,28 +262,17 @@ class Vector(object):
         1st -- if no keyword argument was used, attempt to .read the first pos argument
         """
         # args[0] / filename=
-        try:
-            if kwargs.get('filename', None) is not None:
-                self.filename = kwargs.get('filename')
-            else:
-                self.filename = args[0]
-        except IndexError:
-            # perhaps we explicitly set our filename elsewhere
-            pass
+        if filename is not None:
+            self.filename = filename
         # args[1] / type=
-        try:
-            if kwargs.get('type', None) is not None:
-                _type = kwargs.get('type')
-            else:
-                _type = args[1]
-        except IndexError:
-            _type = 'ESRI Shapefile'  # by default, write as a shapefile
+        if type is None:
+            type = 'ESRI Shapefile'  # by default, write as a shapefile
         try:
             # call fiona to write our geometry to disk
             with fiona.open(
                 self.filename,
                 'w',
-                _type,
+                type,
                 crs=self.crs,
                 schema=self.schema
             ) as shape:
@@ -334,8 +300,9 @@ class Vector(object):
             # merge in our attributes
             _gdf = _gdf.join(self._attributes)
         except Exception:
-            logger.warning("failed to build a GeoDataFrame from shapely geometries -- "
-                           "will try to read from original source file instead")
+            logger.warning("failed to build a GeoDataFrame from shapely"
+                           "geometries -- will try to read from original"
+                           " source file instead")
             _gdf = gp.read_file(self._filename)
         return _gdf
 
@@ -349,21 +316,15 @@ class Vector(object):
     def to_ee_feature_collection(self):
         return ee.FeatureCollection(self.to_geojson(stringify=True))
 
-    def to_geojson(self, *args, **kwargs):
+    def to_geojson(self, stringify=None):
         """
 
         :param args:
-        :param kwargs:
         :return:
         """
-        _as_string = False
-        try:
-            if kwargs.get("stringify", None) is not None:
-                _as_string = kwargs.get("stringify")
-            else:
-                _as_string = args[0]
-        except IndexError:
-            _as_string = False
+        # args[0]/stringify=
+        if stringify is not None:
+            stringify = True
         # build a target dictionary
         feature_collection = {
             "type": "FeatureCollection",
@@ -392,7 +353,7 @@ class Vector(object):
                 self.attributes.loc[i].to_json()
             )
         # do we want this stringified?
-        if _as_string:
+        if stringify:
             feature_collection = json.dumps(feature_collection)
 
         return feature_collection
@@ -431,37 +392,48 @@ def _local_rebuild_crs(*args):
     return _gdf
 
 
-def rebuild_crs(*args, **kwargs):
+def _ee_rebuild_crs(*args):
+    pass
+
+
+def rebuild_crs(*args):
     """
     Build a CRS dict for a user-specified Vector or GeoDataFrame object
     :param args:
-    :param kwargs:
     :return:
     """
-    try:
-        _backend = args[1]
-    except IndexError:
-        _backend = kwargs.get('backend', 'local')
-    if _backend.lower().find('local') != -1:
-        return _local_rebuild_crs(*args)
-    elif _backend.lower().find('ee') != -1:
-        raise BaseException("Currently only local operations for this function are supported")
+    if isinstance(args[0], "EE"):
+        return Do(
+            args[2:],
+            this=_ee_rebuild_crs,
+            that=args[1],
+        ).run()
+    elif isinstance(args[0], "Local"):
+        return Do(
+            args[2:],
+            this=_local_rebuild_crs,
+            that=args[1]
+        ).run()
     else:
-        raise BaseException("Unknown backend type specified")
+        # our default action is to just assume local operation
+        return _local_rebuild_crs(*args)
 
-def is_json(*args, **kwargs):
+def is_valid_file(string=None):
     try:
-        if kwargs.get("string", None) is not None:
-            _string = kwargs.get("string")
+        if os.path.exists(string):
+            return True
         else:
-            _string = args[0]
-    except IndexError:
-        raise IndexError("invalid string= argument passed by user")
-    # sneakily use json.loads() to test whether this is
-    # a valid json string
-    try:
-        _string = json.loads(_string)
-        return True
+            return False
     except Exception:
         return False
 
+def is_json(string=None):
+    if string is None:
+        return False
+    # sneakily use json.loads() to test whether this is
+    # a valid json string
+    try:
+        string = json.loads(string)
+        return True
+    except Exception:
+        return False

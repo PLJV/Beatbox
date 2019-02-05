@@ -13,22 +13,24 @@ __status__ = "Testing"
 import logging
 import numpy as np
 import geopandas as gp
+import pandas as pd
 import fiona
 
 from beatbox.vector import Vector, _local_rebuild_crs
+from beatbox.do import Backend, EE, Local, Do
 
 from copy import copy
 from scipy.sparse.csgraph import connected_components
 
 _DEFAULT_EPSG = 2163
 _DEFAULT_BUFFER_WIDTH = 1000  # default width (in meters) of a geometry for various buffer operations
-_ARRAY_MAX = 800 # maximum array length to attempt numpy operations on before chunking
+_ARRAY_MAX = 2E6 # maximum array length to attempt numpy operations on before chunking
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def _chunks(*args):
+def _split_in_chunks(*args):
     """
     Hidden function that will accept an array (list) and split it up into
     chunks of an arbitrary length using the Python yield built-in
@@ -44,78 +46,79 @@ def _chunks(*args):
     for i in range(0, len(_array), _n_chunks):
         yield _array[i:i + _n_chunks]
 
-def _dissolve_overlapping_geometries(*args, **kwargs):
+
+def _dissolve_overlapping_geometries(buffers=None):
     """
     Hidden function that will accept a GeoDataFrame containing Polygons,
     explode the geometries from single part to multi part, and then dissolve
-    geometries that overlap spatially.
+    geometries that overlap spatially. Implementation is robust for extremely
+    large GeoDataFrames. Proposed dropping this in the future. A better implementation
+    is already available upstream in GeoPandas
     :param arg1: A GeoDataFrame or Vector object specifying source buffers 'groups' we intend to attribute with
     :param buffers: Keyword specification for first positional argument
     :return: GeoDataFrame
     """
     # args[0] / buffers=
-    try:
-        if kwargs.get('buffers', None) is not None:
-            _buffers = kwargs.get('buffers')
-        else:
-            _buffers = args[0]
-    except IndexError:
+    if buffers is None:
         raise IndexError("invalid buffers= "
                          "argument provided by user")
     # force casting as a GeoDataFrame
     try:
-        _buffers = gp.GeoDataFrame({
-            'geometry': _buffers
-        })
-    except ValueError as e:
-        if isinstance(_buffers, gp.GeoDataFrame):
+        _crs = buffers.crs # retain our original CRS
+        buffers = gp.GeoDataFrame({'geometry' : buffers})
+    except ValueError:
+        if isinstance(buffers, gp.GeoDataFrame):
             pass
         else:
             raise ValueError("Invalid buffers= argument input -- failed to"
                              " make a GeoDataFrame from input provided")
     except Exception:
-        raise Exception("Unable to cast buffers= argument as a GeoDataFrame.")
-    # determine appropriate groupings for our overlapping buffers
-    if _buffers.size > _ARRAY_MAX:
-        split = int(round(_buffers.size / _ARRAY_MAX) + 1)
+        raise Exception("Unable to cast buffers= argument (type:" + str(type(buffers)) + ") as a GeoDataFrame.")
+    # determine appropriate groupings for our overlapping buffers -- implementation may differ based
+    # on how large the original GeoDataFrame is
+    if buffers.size > _ARRAY_MAX:
+        split = int(round(buffers.size / _ARRAY_MAX) + 1)
         logger.warning("Attempting intersect operation on a large "
                        "vector dataset -- processing in %s chunks, "
                        "which may lead to artifacts at boundaries. "
                        "ETA: %s min",
                        split, round((split*16.5**2)/60))
-        chunks = _chunks(_buffers, split)
+        chunks = _split_in_chunks(buffers, split)
         try:
             # listcomp magic : for each geometry, determine whether it overlaps with
             # all other geometries in this chunk
             overlap_matrix = np.concatenate(
-                [_buffers.geometry.overlaps(x).values.astype(int)
-                 for i, d in enumerate(chunks)
-                 for x in d.explode()]
+                [ buffers.geometry.overlaps(d).values.astype(int) for i, d in enumerate(chunks) ]
             )
             # free-up our RAM
             del chunks
-        except AttributeError:
+        except AttributeError as e:
             raise AttributeError("Encountered an error when checking for overlaps in chunks of buffered input. "
                                  "This shouldn't happen. Consider updating your libraries with conda/pip and try"
-                                 " again.")
+                                 " again. Full attribute error: " + str(e))
+        # merge attributes
+        overlap_matrix.shape = (buffers.size, buffers.size)
+        n, ids = connected_components(overlap_matrix)
+        dissolved_buffers = gp.GeoDataFrame({
+            'geometry': buffers.geometry,
+            'group': ids
+        })
+        # call geopandas dissolve with our 'ids' column and
+        dissolved_buffers = dissolved_buffers.dissolve(by='group')
+        dissolved_buffers.crs = _crs
     else:
-        overlap_matrix = np.concatenate(
-            [_buffers.geometry.overlaps(x).values.astype(int) for x in _buffers.explode()]
-        )
-    # merge attributes
-    overlap_matrix.shape = (len(_buffers), len(_buffers))
-    n, ids = connected_components(overlap_matrix)
-    dissolved_buffers = gp.GeoDataFrame({
-        'geometry': _buffers.geometry,
-        'group': ids
-    })
-    # call geopandas dissolve with our 'ids' column and
-    dissolved_buffers = dissolved_buffers.dissolve(by='group')
-    dissolved_buffers.crs = _buffers.crs
+        # a sane default implementation used for most small GeoDataFrames
+        # this is mostly redundant -- a user can call unary_union directly
+        dissolved_buffers = buffers.geometry.unary_union
+        dissolved_buffers = gp.GeoDataFrame({
+            'geometry':dissolved_buffers,
+            'group':pd.Series(range(1,len(dissolved_buffers)+1))
+        })
+        dissolved_buffers.crs = _crs
     return dissolved_buffers
 
 
-def _attribute_by_overlap(*args, **kwargs):
+def _spatial_join(buffers=None, points=None):
     """
     Hidden function that will use the group attribute from intersecting polygon features to classify
     point geometries. This is intended to be used as a fuzzy classifier and is a shorthand for gp.sjoin().
@@ -126,30 +129,22 @@ def _attribute_by_overlap(*args, **kwargs):
     :return: GeoDataFrame
     """
     # args[0] / buffers=
-    try:
-        if kwargs.get('buffers', None) is not None:
-            _buffers = kwargs.get('buffers')
-        else:
-            _buffers = args[0]
-    except IndexError:
+    if buffers is None:
         raise IndexError("invalid buffers= argument provided by user")
     # args[1] / points=
-    try:
-        if kwargs.get('points', None) is not None:
-            _points = kwargs.get('points')
-        else:
-            _points = args[1]
-    except IndexError:
+    if points is None:
         raise IndexError("invalid points= argument provided by user")
-    # dissolve-by explode
-    gdf_out = _dissolve_overlapping_geometries(_buffers)
+    # explode and dissolve geometries
+    gdf_out = _dissolve_overlapping_geometries(buffers)
+    # ensure consistent CRS
+    gdf_out = gdf_out.to_crs(points.crs)
     # return the right-sided spatial join
     return gp.\
-        sjoin(_points, gdf_out, how='inner', op='intersects').\
+        sjoin(points, gdf_out, how='inner', op='intersects').\
         rename(columns={'index_right': 'clst_id'})
 
 
-def _local_convex_hull(*args, **kwargs):
+def _local_convex_hull(points=None):
     """
     Accepts point features as a GeoDataFrame and uses geopandas to
     calculate a convex hull from the geometries
@@ -157,27 +152,26 @@ def _local_convex_hull(*args, **kwargs):
     :param points: A keyword specification for our first positional argument
     :return: GeoDataFrame
     """
-    try:
-        if kwargs.get('points', None) is not None:
-            _points = kwargs.get('points')
-        else:
-            _points = args[0]
-    except IndexError:
+    # args[0]/points=
+    if points is None:
         raise IndexError("invalid points= argument provided by user")
     # try and process our lone 'points' argument
-    attr_err_msg = "points= input is invalid. try passing" \
-                   " a GeoDataFrame or Vector object."
-    if isinstance(_points, gp.GeoDataFrame):
+    if isinstance(points, gp.GeoDataFrame):
         pass
-    elif isinstance(_points, Vector):
-        _points = _points.to_geodataframe()
+    elif isinstance(points, Vector):
+        points = points.to_geodataframe()
     else:
-        raise AttributeError(attr_err_msg)
+        raise AttributeError("points= input is invalid. try passing",
+                             " a GeoDataFrame or Vector object.")
     # GeoPandasDataframe->convex_hull()
-    return _points.convex_hull()
+    return points.convex_hull()
 
 
-def _local_fuzzy_convex_hull(*args, **kwargs):
+def _ee_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
+    raise NotImplementedError
+
+
+def _local_fuzzy_convex_hull(points=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Accepts a GeoDataFrame containing points, buffers the point geometries by some distance,
     and than builds convex hulls from point clusters
@@ -188,37 +182,30 @@ def _local_fuzzy_convex_hull(*args, **kwargs):
     :return: GeoDataFrame
     """
     # args[0] / points=
-    try:
-        if kwargs.get('points', None) is not None:
-            _points = kwargs.get('points')
-        else:
-            _points = args[0]
-    except IndexError:
+    if points is None:
         raise IndexError("invalid points= argument passed by user")
-    # args[1] / width=
-    try:
-        if kwargs.get('width', None) is not None:
-            _width = kwargs.get('width')
-        else:
-            _width = args[1]
-    except IndexError:
-        _width = _DEFAULT_BUFFER_WIDTH
     # cast our points features as a gdf (if they aren't already)
-    if isinstance(_points, str):
-        _points = Vector(_points).to_geodataframe()
+    if isinstance(points, str):
+        points = Vector(points).to_geodataframe()
     # reproject to something that uses metric units
-    _points = _local_rebuild_crs(_points)
-    _points = _points.to_crs(epsg=_DEFAULT_EPSG)
+    points = _local_rebuild_crs(points)
+    points = points.to_crs(epsg=_DEFAULT_EPSG)
     # generate circular point buffers around our SpatialPoints features
     try:
-        _point_buffers = copy(_points)
+        point_buffers = copy(points)
         # adjust the width= parameter based on the projection
         # of our point buffers
-        _point_buffers = _point_buffers.buffer(_width)
+        point_buffers = point_buffers.buffer(width).unary_union
+        point_buffers = gp.GeoDataFrame({
+            'geometry': point_buffers,
+            'group':pd.Series(range(1,len(point_buffers)+1))
+        })
+        # set the CRS
+        point_buffers.crs = {'init':'epsg:'+str(_DEFAULT_EPSG)}
     except Exception as e:
         raise e
-    # dissolve overlapping buffered geometries
-    point_clusters = _attribute_by_overlap(_point_buffers, _points)
+    # spatial join of our point_buffers
+    point_clusters = _spatial_join(point_buffers, points)
     # drop any extra columns lurking in our point clusters data
     # and dissolve by our clst_id field
     if len(point_clusters.columns) > 2:
@@ -228,14 +215,17 @@ def _local_fuzzy_convex_hull(*args, **kwargs):
         cols_to_remove.remove('geometry')
         for col in cols_to_remove:
             del point_clusters[col]
+    # group our point clusters by cluster id
+    _clst_id = point_clusters['clst_id']
     point_clusters = point_clusters.dissolve(by='clst_id')
+    point_clusters['clst_id'] = _clst_id
     # estimate our convex hulls and drop geometries that are not polygons
     convex_hulls = point_clusters.convex_hull
-    convex_hulls = convex_hulls[[str(ft).find("POLYGON")!=-1
+    convex_hulls = convex_hulls[[str(ft).find("POLYGON") != -1
                                  for ft in convex_hulls.geometry]]
     # return our convex hulls as a GeoDataFrame
     gdf = gp.GeoDataFrame({'geometry': convex_hulls})
-    gdf.crs = _points.crs
+    gdf.crs = points.crs
     # sanity check
     if len(gdf) < 1:
         logger.warning("Length of our convex hulls generated from buffered "
@@ -243,45 +233,45 @@ def _local_fuzzy_convex_hull(*args, **kwargs):
     return gdf
 
 
-def fuzzy_convex_hull(*args, **kwargs):
+def _guess_backend(obj=None):
+    """
+    Will attempt to parse a proper backend code based on object context
+    """
+    if obj is None:
+        return None
+    elif isinstance(obj, "Raster") or isinstance(obj, "Vector"):
+        return obj.backend
+    elif isinstance(obj, "GeoRaster") or isinstance(obj, "GeoDataFrame"):
+        return Backend._backend_code["local"]
+    else:
+        return "unknown"
+
+
+def fuzzy_convex_hull(obj=None, width=_DEFAULT_BUFFER_WIDTH):
     """
     Fuzzy convex hull wrapper function that will call either a local or earth engine
     implementation of the Carter fuzzy convex hull generator. Currently only a local
     version of this is implemented.
     :param arg1: A GeoDataFrame or Vector object specifying source points we intend to buffer
     :param arg2: An integer value (in meters) specifying the radius we wish to buffer point features by
-    :param arg3: A string value specifying which backend ('local'/'ee') we wish to use
     :param points: Keyword specification for first positional arg
     :param width: Keyword specification for second positional arg
-    :param backend: Keyword specification for third positional arg
     :return: GeoDataFrame
     """
     # args[0]/points=
-    try:
-        if kwargs.get('points', None) is not None:
-            _points = kwargs.get('points')
-        else:
-            _points = args[0]
-    except IndexError:
+    if obj is None:
         raise IndexError("invalid points= argument")
-    # args[1]/width=
-    try:
-        if kwargs.get('width', None) is not None:
-            _width = kwargs.get('width')
-        else:
-            _width = args[1]
-    except IndexError:
-        raise IndexError("invalid buffer width= argument.")
-    # args[2]/backend=
-    try:
-        _backend = args[2]
-    except IndexError:
-        # fallback to local by default if a backend wasn't specified
-        _backend = kwargs.get('backend', 'local')
     # launch our context runner
-    if _backend.lower().find('local') != -1:
-        return _local_fuzzy_convex_hull(points=_points, width=_width)
-    elif _backend.lower().find('ee') != -1:
-        raise BaseException("Earth Engine interface not yet implemented")
+    if isinstance(obj, EE):
+        return Do(
+            this=_ee_fuzzy_convex_hull,
+            that=[obj, width]
+        ).run()
+    elif isinstance(obj, Local):
+        return Do(
+            this=_local_fuzzy_convex_hull,
+            that=[obj, width]
+        ).run()
     else:
-        raise BaseException("Unknown backend type specified")
+        # our default action is to just assume local operation
+        return _local_fuzzy_convex_hull(points=obj, width=width)

@@ -1,8 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 __author__ = "Kyle Taylor"
 __copyright__ = "Copyright 2018, Playa Lakes Joint Venture"
-__credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts", "Stephen Chang"]
+__credits__ = ["Kyle Taylor", "Alex Daniels", "Meghan Bogaerts",
+               "Stephen Chang"]
 __license__ = "GPL"
 __version__ = "3"
 __maintainer__ = "Kyle Taylor"
@@ -10,29 +11,23 @@ __email__ = "kyle.taylor@pljv.org"
 __status__ = "Testing"
 
 # mmap file caching and file handling
-import sys, os
-from tempfile import mkdtemp
+import sys
 from random import randint
+from copy import copy
 # raster manipulation
-import numpy as np
-import georasters as gr
+from georasters import GeoRaster
+from georasters import get_geo_info, create_geotiff, merge
 import gdalnumeric
 import gdal
+import numpy as np
 from osgeo import gdal_array
-# logging
-import logging
-# deep copy
-from copy import copy
 # memory profiling
 import types
 import psutil
-
-_DEFAULT_NA_VALUE = 0
-_DEFAULT_PRECISION = np.uint16
-
+# logging
+import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 # Fickle beast handlers for Earth Engine
 try:
     import ee
@@ -44,21 +39,31 @@ except Exception:
                    "Check your installation. Will continue "
                    "to load but without the EE functionality.")
 
-str_to_numpy_types = {
+# short-hand string identifiers for numpy
+# types. Int, float, and byte will be the
+# most relevant for raster arrays, but the
+# gang is all here
+NUMPY_TYPES = {
   "uint8": np.uint8,
   "int8": np.uint8,
+  "int": np.intc,
   "byte": np.int8,
   "uint16": np.uint16,
   "int16": np.int16,
   "uint32": np.uint32,
   "int32": np.int32,
+  "float": np.single,
   "float32": np.float32,
   "float64": np.float64,
   "complex64": np.complex64,
-  "complex128": np.complex128,
+  "complex128": np.complex128
 }
 
+_DEFAULT_NA_VALUE = 0
+_DEFAULT_PRECISION = np.uint16
+
 class Raster(object):
+
     """
     Raster class is a wrapper for generating GeoRasters,
     Numpy arrays, and Earth Engine Image objects. It opens files
@@ -68,65 +73,46 @@ class Raster(object):
     file (typically a GeoTIFF) or an asset id for earth engine
     :return None
     """
-    def __init__(self, *args, **kwargs):
-        self.backend = "local" # By default, assume that we are working with raster data locally
-        self.array = None
-        self.filename = None
-        self._use_disc_caching = None # Use mmcache?
-        # Public properties for GeoRaster compatibility and exposure to user
-        self.ndv = None          # no data value
+
+    def __init__(self, filename=None, array=None, dtype=None,
+                 disc_caching=None):
+        # Privates
+        self._backend = "local"
+        self._array = None
+        self._filename = None
+        self._using_disc_caching = None  # Use mmcache?
+        # Public properties (maintained for GeoRasters)
+        self.ndv = _DEFAULT_NA_VALUE # no data value
         self.x_cell_size = None  # cell size of x (meters/degrees)
         self.y_cell_size = None  # cell size of y (meters/degrees)
         self.geot = None         # geographic transformation
         self.projection = None   # geographic projection
+        self.dtype = _DEFAULT_PRECISION
         # args[0]/file=
-        if kwargs.get('file', None) is not None:
-            self.filename = kwargs.get('file')
-        else:
-            try:
-                self.filename = args[0]
-            except IndexError:
-                pass
+        self.filename = filename
         # args[1]/array=
-        if kwargs.get('array', None) is not None:
-            self.array = kwargs.get('array')
-        else:
-            try:
-                self._array = args[1]
-            except IndexError:
-                pass
+        self.array = array
         # args[2]/dtype=
-        if kwargs.get('dtype', None) is not None:
-            _dtype = kwargs.get('dtype')
-        else:
-            try:
-                _dtype = args[2]
-            except IndexError:
-                _dtype = _DEFAULT_PRECISION
+        if dtype is not None:
+            self.dtype = dtype
         # args[3]/disc_cache=
-        if kwargs.get('disc_cache', None) is not None:
-            self._use_disc_caching = kwargs.get('disc_cache')
-        else:
-            try:
-                if args[3] is not None:
-                    self._use_disc_caching = str(randint(1, 9999999999)) + \
-                                             '_np_binary_array.dat'
-            except IndexError:
-                self._use_disc_caching = None
+        if disc_caching is not None:
+            self._using_disc_caching = str(randint(1, 9999999999)) + \
+                                       '_np_binary_array.dat'
         # if we were passed a file argument, assume it's a
         # path and try to open it
         if self.filename is not None:
             try:
-                self.open(self.filename, dtype=_dtype)
+                self.open(self.filename)
             except OSError:
-                raise OSError("couldn't read filename provided")
+                raise OSError("couldn't open the filename provided")
 
     def __copy__(self):
         _raster = Raster()
         _raster._array = copy(self._array)
         _raster._backend = copy(self._backend)
         _raster._filename = copy(self._filename)
-        _raster._use_disc_caching = copy(self._filename)
+        _raster._using_disc_caching = copy(self._filename)
         _raster.ndv = self.ndv
         _raster.x_cell_size = self.x_cell_size
         _raster.y_cell_size = self.y_cell_size
@@ -144,7 +130,14 @@ class Raster(object):
 
     @array.setter
     def array(self, *args):
-        self._array = args[0]
+        """
+        Assign a numpy masked array to our Raster object
+        """
+        self._array = np.ma.masked_array(
+            args[0],
+            mask=self._array == self.ndv,
+            fill_value=self.ndv
+        )
 
     @property
     def filename(self):
@@ -162,55 +155,52 @@ class Raster(object):
     def backend(self, *args):
         self._backend = args[0]
 
-    def open(self, *args, **kwargs):
+    def open(self, file=None, dtype=None):
         """
         Open a local file handle for reading and assignment
         :param file:
         :return: None
         """
         # args[0]/file=
-        if kwargs.get('file') is not None:
-            _file = kwargs.get('file')
-        else:
-            try:
-                _file = args[0]
-            except IndexError:
-                raise IndexError("invalid file= argument provided")
+        if file is None:
+            raise IndexError("invalid file= argument provided")
         # grab raster meta information from GeoRasters
         try:
-            self.ndv, _x_size, _y_size, self.geot, self.projection, _datatype = \
-                gr.get_geo_info(_file)
+            self.ndv, self.x_cell_size, self.y_cell_size, self.geot, self.projection, self.dtype = \
+                get_geo_info(file)
         except Exception:
-            raise AttributeError("problem processing file input -- is this a raster file?")
+            raise AttributeError("problem processing file input -- is this",
+                                 "a raster file?")
         # args[1]/dtype=
-        if kwargs.get('dtype') is not None:
-            _dtype = kwargs.get('dtype')
-        else:
-            try:
-                _dtype = args[1]
-            except IndexError:
-                _dtype = _datatype
+        if dtype is not None:
+            # override our shadow'd value from GeoRasters if
+            # something was specified by the user
+            self.dtype = dtype
+        # re-cast our datatype as a numpy type, if needed
+        if type(self.dtype) == str:
+            self.dtype = NUMPY_TYPES[self.dtype.lower()]
         if self.ndv is None:
             self.ndv = _DEFAULT_NA_VALUE
         # low-level call to gdal with explicit type specification
         # that will store in memory or as a disc cache, depending
-        # on the state of our _use_disc_caching property
-        if self._use_disc_caching is not None:
+        # on the state of our _using_disc_caching property
+        if self._using_disc_caching is not None:
             # create a cache file
             self.array = np.memmap(
-                self._use_disc_caching, dtype=_dtype, mode='w+', shape=(_x_size, _y_size)
+                self._using_disc_caching, dtype=dtype, mode='w+', shape=(_x_size, _y_size)
             )
-            # load file contents into cache
+            # load file contents into the cache
             self.array[:] = gdalnumeric.LoadFile(
                 filename=self.filename,
-                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(self.dtype)
             )[:]
-        # self.array here can be either a memmap object or undefined
-        self.array = gdalnumeric.LoadFile(
-            filename=self.filename,
-            buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(_dtype)
-        )
-        # store array values as a numpy masked array
+        # by default, load the whole file into memory
+        else:
+            self.array = gdalnumeric.LoadFile(
+                filename=self.filename,
+                buf_type=gdal_array.NumericTypeCodeToGDALTypeCode(self.dtype)
+            )
+        # make sure we honor our no data value
         self.array = np.ma.masked_array(
             self.array,
             mask=self.array == self.ndv,
@@ -219,13 +209,15 @@ class Raster(object):
 
     def write(self, dst_filename=None, format=gdal.GDT_UInt16, driver=gdal.GetDriverByName('GTiff')):
         """
-        wrapper for georasters create_geotiff that writes a numpy array to disk.
+        Wrapper for GeoRaster's create_geotiff that writes a numpy array to disk.
         :param dst_filename:
         :param format:
         :param driver:
         :return:
         """
-        return gr.create_geotiff(
+        if not dst_filename:
+            dst_filename = self.filename
+        return create_geotiff(
             name=dst_filename,
             Array=self.array,
             geot=self.geot,
@@ -238,10 +230,19 @@ class Raster(object):
         )
 
     def to_numpy_array(self):
+        """
+        Returns the Numpy array values for our Raster object.
+        :return:
+        """
         return self.array
 
     def to_georaster(self):
-        return gr.GeoRaster(
+        """
+        Parses internal Raster elements and returns as a clean GeoRaster
+        object.
+        :return:
+        """
+        return GeoRaster(
             self.array,
             self.geot,
             nodata_value=self.ndv,
@@ -250,7 +251,19 @@ class Raster(object):
         )
 
     def to_ee_image(self):
+        """
+        Parses our internal numpy array as an Earth Engine ee.array object.
+        Would like to see this eventually become a standard interface for
+        dynamically ingesting raster data on Earth Engine, but it's currently
+        broken
+        """
+        logger.warning("to_ee_image() is an experimental feature -- we are",
+                       "still working through asset ingestion for earth engine.")
         return ee.array(self.array)
+
+
+def crop(*args):
+    return _local_crop(args)
 
 
 def extract(*args):
@@ -262,27 +275,45 @@ def extract(*args):
     :return:
     """
 
-def binary_reclassify(*args, **kwargs):
+def binary_reclassify(array=None, match=None, *args):
     """
     Generalized version of binary_reclassify that can accomodate
     a local numpy array or processing on EE
     :param args:
-    :param kwargs:
     :return:
     """
+    _backend = 'local'
+    # args[0]/array=
+    if array is None:
+        raise IndexError("invalid raster= argument provided by user")
     # args[1]/match=
-    if not _is_number(args[1]):
+    if match is None:
+        raise IndexError("invalid match= argument provided by user")
+    if not _is_number(match):
         logger.warning(" One or more values in your match array are "
-                       "not integers -- the reclass operation may fail")
-    # args[0]/raster=
-    if isinstance(args[0], Raster):
-        if args[0].backend == "local":
-            return _local_binary_reclassify(args)
-        else:
-            raise NotImplementedError("Currently only local binary "
-                                      "reclassification is supported")
+                       "not integers -- the reclass operation may produce "
+                       "unexpected results")
+    # process our array using the appropriate backend,
+    # currently only local operations are supported
+    if isinstance(array, Raster):
+        _backend = 'local'
+        array = array.to_georaster()
+    elif isinstance(array, GeoRaster):
+        _backend = 'local'
+    elif isinstance(array, np.array):
+        _backend = 'local'
+    else:
+        _backend = 'unknown'
 
-def _local_binary_reclassify(*args, **kwargs):
+    if _backend == "local":
+        return _local_binary_reclassify(array, match)
+    else:
+        raise NotImplementedError("Currently only local binary "
+                                  "reclassification is supported")
+
+
+def _local_binary_reclassify(raster=None, match=None, invert=None,
+                             dtype=np.uint8):
     """ binary reclassification of input data. All cell values in
     a numpy array are reclassified as uint8 (boolean) based on
     whether they match or do not match the values of an input match
@@ -293,144 +324,103 @@ def _local_binary_reclassify(*args, **kwargs):
     :param: match : keyword version of args1
     """
     # args[0]/raster=
-    try:
-        if kwargs.get('raster', None) is not None:
-            _raster = kwargs.get('raster')
-        else:
-            _raster = args[0]
-    except IndexError:
-        IndexError("invalid raster= argument supplied by user")
+    if raster is None:
+        raise IndexError("invalid raster= argument supplied by user")
     # args[1]/match=
-    try:
-        if kwargs.get('match', None) is not None:
-            _match = kwargs.get('match')
-        else:
-            _match =  args[1]
-    except IndexError:
-        IndexError("invalid match= argument supplied by user")
+    if match is None:
+        raise IndexError("invalid match= argument supplied by user")
     # args[2]/invert=
-    if kwargs.get('invert', None) is not None:
-        _invert = kwargs.get('invert')
-    else:
-        try:
-            _invert = args[2]
-        except IndexError:
-            # this is an optional arg
-            _invert = False
-    if kwargs.get('dtype', None) is not None:
-        _dtype = kwargs.get('dtype')
-    else:
-        try:
-            _dtype = args[3]
-        except IndexError:
-            _dtype = np.uint8
+    if invert is None:
+        # this is an optional arg
+        invert = False
     # if this is a Raster object, just drop
-    # _raster down to a GeoRaster and pass on
-    if isinstance(_raster, Raster):
-        _raster = _raster.to_georaster()
+    # raster down to a GeoRaster and pass on
+    if isinstance(raster, Raster):
+        raster = raster.to_georaster()
     # if this is a complete GeoRaster, try
     # to process the whole object
-    if isinstance(_raster, gr.GeoRaster):
-        _raster = _raster.raster
+    if isinstance(raster, GeoRaster):
+        raster = raster.raster
         return np.reshape(
             np.array(
-                np.in1d(_raster, _match, assume_unique=True, invert=_invert),
-                dtype=_dtype
+                np.in1d(raster, match, assume_unique=True, invert=invert),
+                dtype=dtype
             ),
-            _raster.shape
+            raster.shape
         )
     # if this is a big raster that we've split into chunks
     # process this piece-wise
-    elif isinstance(_raster, types.GeneratorType):
+    elif isinstance(raster, types.GeneratorType):
         return np.concatenate(
             [np.reshape(
                 np.array(
-                    np.in1d(d[0], _match, assume_unique=True, invert=_invert),
-                    dtype=_dtype
+                    np.in1d(d[0], match, assume_unique=True, invert=invert),
+                    dtype=dtype
                 ),
-                (1, d.shape[1]) # array shape tuple e.g., (1,1111)
+                (1, d.shape[1])  # array shape tuple e.g., (1,1111)
              )
-             for i, d in enumerate(_raster)]
+             for i, d in enumerate(raster)]
         )
     else:
-        raise ValueError("raster= input should be a GeoRaster or Generator that numpy can work with")
+        raise ValueError("raster= input should be a Raster, GeoRaster, or",
+                         "Generator that numpy can work with")
 
 
-def _local_reclassify(*args, **kwargs):
+def _local_reclassify(*args):
     pass
 
 
-def _local_crop(*args, **kwargs):
+def _local_crop(raster=None, shape=None, *args):
     """ wrapper for georasters.clip that will preform a crop operation on our input raster"""
     # args[0] / raster=
-    try:
-        if kwargs.get('raster', None) is not None:
-            _raster = kwargs.get('raster')
-        else:
-            _raster = args[0]
-    except IndexError:
+    if raster is None:
         raise IndexError("invalid raster= argument specified")
     # args[1] / shape=
-    try:
-        if kwargs.get('shape', None) is not None:
-            _shape = kwargs.get('shape')
-        else:
-            _shape = args[1]
-    except IndexError:
+    if shape is None:
         raise IndexError("invalid shape=argument specified")
-   # sanity check and then do our crop operation
-   # and return to user
-    _enough_ram = _local_ram_sanity_check(_raster.array)
-    if not _enough_ram['available'] and not _raster._use_disc_caching:
+    # sanity check and then do our crop operation
+    # and return to user
+    _enough_ram = _local_ram_sanity_check(raster.array)
+    if not _enough_ram['available'] and not raster._using_disc_caching:
         logger.warning(" There doesn't apprear to be enough free memory"
                        " available for our raster operation. You should use"
                        "disc caching options with your dataset. Est Megabytes "
                        "needed: %s", -1*_enough_ram['bytes']*0.0000001)
-    return _raster.to_georaster().gr.clip(_shape)
+    return raster.to_georaster().clip(shape)
 
 
 
-def _local_clip(*args, **kwargs):
+def _local_clip(raster=None, shape=None):
     """clip is a hold-over from gr that performs a crop operation"""
-    try:
-        if kwargs.get('raster', None) is not None:
-            _raster = kwargs.get('raster')
-        else:
-            _raster = args[0]
-    except IndexError:
+    # args[0]/raster=
+    if raster is None:
         raise IndexError("invalid raster= argument specified")
-    try:
-        if kwargs.get('shape', None) is not None:
-            _shape = kwargs.get('shape')
-        else:
-            _shape = args[1]
-    except IndexError:
+    # args[1]/shape=
+    if shape is None:
         raise IndexError("invalid shape= argument specified")
-    return _local_crop(raster=_raster, shape=_shape)
+    return _local_crop(raster=raster, shape=shape)
 
-def _ee_extract(*args, **kwargs):
+def _ee_extract(*args):
     """
     Earth Engine extract handler
     :param args:
-    :param kwargs:
     :return:
     """
+    pass
 
-def _local_extract(*args, **kwargs):
+def _local_extract(*args):
     """
     local raster extraction handler
     :param args:
-    :param kwargs:
     :return:
     """
     pass
 
 
-def _ee_extract(*args, **kwargs):
+def _ee_extract(*args):
     """
     EE raster extraction handler
     :param args:
-    :param kwargs:
     :return:
     """
     if not _HAVE_EE:
@@ -438,63 +428,50 @@ def _ee_extract(*args, **kwargs):
                              "but we failed to load and initialize the ee package.")
 
 
-def _local_reproject(*args, **kwargs):
+def _local_reproject(*args):
     pass
 
 
-def _local_merge(*args, **kwargs):
+def _local_merge(rasters=None):
     """
-    Wrapper for georasters.merge that simplifies merging raster segments returned by parallel operations.
+    Wrapper for georasters.merge that simplifies merging raster segments
+    returned by parallel operations.
     """
-    try:
-        if kwargs.get('rasters', None) is not None:
-            _rasters = kwargs.get('rasters')
-        else:
-            _rasters = args[0]
-    except IndexError:
+    if rasters is None:
         raise IndexError("invalid raster= argument specified")
-    return gr.merge(_rasters)
+    return merge(rasters)
 
 
 
-def _local_split(*args, **kwargs):
+def _local_split(raster=None, n=None):
     """
     Stump for np._array_split. splits an input array into n (mostly) equal segments,
     possibly for a future parallel operation.
     """
-    try:
-        if kwargs.get('raster', None) is not None:
-            _raster = kwargs.get('raster')
-        else:
-            _raster = args[0]
-    except IndexError:
+    # args[0]/raster=
+    if raster is None:
         raise IndexError("invalid raster= argument specified")
-    try:
-        if kwargs.get('n', None) is not None:
-            _n = kwargs.get('n')
-        else:
-            _n = args[1]
-    except IndexError:
+    #args[1]/n=
+    if n is None:
         raise IndexError("invalid n= argument specified")
     return np.array_split(
-        np.array(_raster.array, dtype=str(_raster.array.data.dtype)),
-        _n
+        np.array(raster.array, dtype=str(raster.array.data.dtype)),
+        n
     )
 
 
-def _local_ram_sanity_check(*args):
-    #args[0] (Raster object, GeoRaster, or numpy array)
-    try:
-        _array = args[0]
-    except IndexError:
-        raise IndexError("first pos. argument should be some kind of raster data")
+def _local_ram_sanity_check(array=None):
+    # args[0] (Raster object, GeoRaster, or numpy array)
+    if array is None:
+        raise IndexError("first pos. argument should be some kind of "
+                         "raster data")
 
-    _cost = _est_free_ram - _est_array_size(_array)
-
+    _cost = _est_free_ram() - _est_array_size(array)
     return {
-        'available': bool(_cost>0),
+        'available': bool(_cost > 0),
         'bytes': int(_cost)
     }
+
 
 def _est_free_ram():
     """
@@ -507,37 +484,34 @@ def _est_free_ram():
     return psutil.virtual_memory().free
 
 
-def _est_array_size(*args, **kwargs):
+def _est_array_size(obj=None, byte_size=None, dtype=None):
     """
 
     :param args:
-    :param kwargs:
     :return:
     """
-    _obj = args[0]
-    _byte_size = None
     # args[0] is a list containing array dimensions
-    if isinstance(_obj, list) or isinstance(_obj, tuple):
-        _array_len = np.prod(_obj)
+    if isinstance(obj, list) or isinstance(obj, tuple):
+        _array_len = np.prod(obj)
     # args[0] is a GeoRaster object
-    elif isinstance(_obj, gr.GeoRaster):
-        _array_len = np.prod(_obj.shape)
-        _byte_size = str_to_numpy_types[_obj.datatype.lower()](1)
+    elif isinstance(obj, GeoRaster):
+        dtype = obj.datatype
+        _array_len = np.prod(obj.shape)
+        _byte_size = NUMPY_TYPES[obj.datatype.lower()](1)
     # args[0] is a Raster object
-    elif isinstance(_obj, Raster):
-        _array_len = np.prod(_obj.array.shape)
-        _byte_size = str_to_numpy_types[_obj.array.dtype.lower()](1)
+    elif isinstance(obj, Raster):
+        dtype = obj.array.dtype
+        _array_len = np.prod(obj.array.shape)
+        _byte_size = NUMPY_TYPES[obj.array.dtype.lower()](1)
     # args[0] is something else?
     else:
-        _array_len = len(_obj)
+        _array_len = len(obj)
     # args[1]/dtype= argument was specified
-    try:
-        _byte_size = str_to_numpy_types[args[1].lower()](1)
-    except IndexError:
-        if kwargs.get("dtype", None) is not None:
-            _byte_size = str_to_numpy_types[kwargs.get("dtype").lower()](1)
-        elif _byte_size is None:
-            raise IndexError("invalid dtype= argument specified")
+    if dtype is not None:
+        _byte_size = NUMPY_TYPES[dtype.lower()](1)
+    else:
+        raise IndexError("couldn't assign a default data type and an invalid ",
+                         "dtype= argument specified")
     return _array_len * sys.getsizeof(_byte_size)
 
 
@@ -554,9 +528,17 @@ def _local_process_array_as_blocks(*args):
     for i in range(0, _rows, _n_chunks):
         yield _array[i:i + _n_chunks]
 
-def _is_number(*args):
+
+def _is_number(num_list=None):
+    """
+    Shorthand listcomp function that will determine whether any
+    item in a list is not a number.
+    :param args[0]: a python list object
+    :return: True on all integers,
+    """
     try:
-        if np.sum([not isinstance(i, int) for i in args[0]]) > 0:
+        if np.sum([not(isinstance(i, int) or isinstance(i, float))
+                   for i in num_list]) > 0:
             return False
         else:
             return True

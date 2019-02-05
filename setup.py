@@ -28,4 +28,7 @@ setup(name='beatbox',
       url='http://pljv.org/about',
       long_description=LONG_DESCRIPTION,
       packages=['beatbox'],
-      install_requires=INSTALL_REQUIRES)
+      install_requires=INSTALL_REQUIRES,
+      scripts=['scripts/gdal_moving_windows.py']
+)
+
